@@ -1,0 +1,99 @@
+/* Fade In Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Slide In From Left */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide In From Right */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Card Hover Lift */
+@keyframes cardLift {
+  from {
+    transform: translateY(0) scale(1);
+    box-shadow: var(--shadow-card);
+  }
+  to {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--shadow-hover);
+  }
+}
+
+/* Pulse Effect */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+/* Spin (for loading) */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Utility Classes */
+.fade-in {
+  animation: fadeIn var(--transition-medium) ease-out;
+}
+
+.slide-in-left {
+  animation: slideInLeft var(--transition-medium) ease-out;
+}
+
+.slide-in-right {
+  animation: slideInRight var(--transition-medium) ease-out;
+}
+
+.card-hover {
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: var(--shadow-hover);
+}
+
+.pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
