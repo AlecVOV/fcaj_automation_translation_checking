@@ -29,8 +29,8 @@ const toggleAccountMenu = () => {
           </button>
         </div>
         <div class="top-bar-right">
-          <a href="#" class="top-bar-link">Contact us</a>
-          <a href="#" class="top-bar-link">Support</a>
+          <a href="/contact-us" class="top-bar-link">Contact us</a>
+          <a href="/faq" class="top-bar-link">FAQ</a>
           <a href="#" class="top-bar-link">My account</a>
           <button class="account-icon">
             <span class="user-icon">👤</span>
@@ -200,12 +200,12 @@ const toggleAccountMenu = () => {
 .brand-logo {
   font-size: 24px;
   font-weight: 700;
-  color: var(--color-accent-orange);
+  color: var(--color-primary-navy);
   letter-spacing: -0.5px;
 }
 
 .brand-divider {
-  color: var(--color-gray-dark); /* Darker divider for visibility on light bg */
+  color: var(--color-gray-dark); 
   font-size: 24px;
   font-weight: 300;
 }

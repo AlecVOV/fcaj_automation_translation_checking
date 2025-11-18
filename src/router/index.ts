@@ -32,7 +32,25 @@ const router = createRouter({
       name: 'validation-result',
       component: () => import('@/views/ValidationResultPage.vue'),
       meta: { title: 'Validation Results' }
-    }
+    },
+    {
+      path: '/faq',
+      name: 'faq',
+      component: () => import('@/views/FAQPage.vue'),
+      meta: { title: 'FAQ' }
+    },
+    {
+      path: '/contact-us',
+      name: 'contact-us',
+      component: () => import('@/views/ContactPage.vue'),
+      meta: { title: 'Contact Us' }
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('@/views/NotFoundPage.vue'),
+      meta: { title: '404 - Page Not Found' }
+    },
   ],
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {

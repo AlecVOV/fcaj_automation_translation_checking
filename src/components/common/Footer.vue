@@ -9,21 +9,21 @@ const currentYear = new Date().getFullYear()
         <div class="footer-grid">
           <!-- Company Info -->
           <div class="footer-section">
-            <h3>FCAJ Headquarters</h3>
-            <p>123 Translation Street</p>
-            <p>Hanoi, Vietnam</p>
-            <p>Email: contact@fcaj.vn</p>
-            <p>Phone: +84 (0) 123 456 789</p>
+            <h3>First AI Journey (FCAJ)</h3>
+            <p>Designed for Students</p>
+            <p>Community Powered: AWS Study Groups & University Clubs. </p>
+            <p>Hands-On Focus: Real-world labs, not just textbooks.</p>
+            <p>Career Ready: Build the tech and soft skills to land your first job.</p>
           </div>
 
           <!-- Quick Links -->
           <div class="footer-section">
             <h3>Quick Links</h3>
             <ul class="footer-links">
-              <li><a href="#">About FCAJ</a></li>
-              <li><a href="#">Our Services</a></li>
-              <li><a href="#">Privacy Policy</a></li>
-              <li><a href="#">Terms of Service</a></li>
+              <li><a href="https://awsstudygroup.com/">About AWS Study Group</a></li>
+              <li><a href="https://cloudjourney.awsstudygroup.com/">About FCAJ</a></li>
+              <li><a href="https://aws.amazon.com/blogs">AWS Blog (English)</a></li>
+              <li><a href="https://awsstudygroup.com/category/aws-blogs/">AWS Blog (Vietnamese)</a></li>
             </ul>
           </div>
 
@@ -31,9 +31,10 @@ const currentYear = new Date().getFullYear()
           <div class="footer-section">
             <h3>Support</h3>
             <ul class="footer-links">
-              <li><a href="#">Documentation</a></li>
-              <li><a href="#">FAQ</a></li>
-              <li><a href="#">Contact Support</a></li>
+              <li><a href="https://docs.aws.amazon.com/">AWS Documentation</a></li>
+              <li><a href="/faq">FAQ</a></li>
+              <li><a href="/contact-us">Contact Support</a></li>
+              <li><a href="https://fcj-pagoda-website.vercel.app/">Mediation Hub</a></li>
             </ul>
           </div>
         </div>
@@ -67,7 +68,7 @@ const currentYear = new Date().getFullYear()
 
 .footer-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(20px, 1fr));
   gap: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
 }

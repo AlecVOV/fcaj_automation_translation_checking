@@ -80,8 +80,10 @@ const clearFile = () => {
 
 <template>
   <div class="upload-page">
-    <!-- Hero Section -->
     <section class="hero fade-in">
+      <div class="hero-background">
+        <div class="animated-gradient"></div>
+      </div>
       <div class="hero-content">
         <h1 class="hero-title">Batch Upload</h1>
         <p class="hero-subtitle">
@@ -150,11 +152,8 @@ const clearFile = () => {
         <div class="instructions">
           <h3>File Format Guidelines</h3>
           <ul>
-            <li>Column 1: Post ID</li>
-            <li>Column 2: English Title</li>
-            <li>Column 3: Vietnamese Title</li>
-            <li>Column 4: Original Text (English)</li>
-            <li>Column 5: Translated Text (Vietnamese)</li>
+            <li>Column 1: URL of the original post</li>
+            <li>Column 2: URL of the translated post</li>
           </ul>
         </div>
       </div>

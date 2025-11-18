@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Translation, DashboardStats } from '@/types/translation'
+import { mockPosts } from '@/data/mockPosts'
+import { mockErrors } from '@/data/mockErrors'
+
 
 export const useDashboardStore = defineStore('dashboard', () => {
   const posts = ref<Translation[]>([])
@@ -18,7 +21,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       heavyErrors: heavy,
       mediumErrors: medium,
       lightErrors: light,
-      averageScore: 0 // Calculate based on your scoring system
+      averageScore: 0
     }
   })
 
@@ -27,10 +30,11 @@ export const useDashboardStore = defineStore('dashboard', () => {
     error.value = null
     
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/posts')
-      if (!response.ok) throw new Error('Failed to fetch posts')
-      posts.value = await response.json()
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // Use mock data instead of API call
+      posts.value = mockPosts
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to fetch posts'
       console.error('Failed to fetch posts:', e)
@@ -43,14 +47,32 @@ export const useDashboardStore = defineStore('dashboard', () => {
     const post = posts.value.find(p => p.id === id)
     if (post) return post
 
-    // Fetch from API if not in store
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 300))
+    
+    // Find in mock data
+    const mockPost = mockPosts.find(p => p.id === id)
+    if (!mockPost) throw new Error('Post not found')
+    
+    return mockPost
+  }
+
+  async function getPostErrors(postId: string) {
     try {
-      const response = await fetch(`/api/posts/${id}`)
-      if (!response.ok) throw new Error('Post not found')
-      return await response.json()
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // Get errors from mock data based on postId
+      const postErrors = mockErrors[postId]
+      if (!postErrors) {
+        // Return empty array if no errors found for this post
+        return []
+      }
+      
+      return postErrors
     } catch (e) {
-      console.error('Failed to fetch post:', e)
-      throw e
+      console.error('Error fetching post errors:', e)
+      throw new Error('Failed to fetch post errors')
     }
   }
 
@@ -60,6 +82,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     error,
     statistics,
     fetchPosts,
-    getPostById
+    getPostById,
+    getPostErrors
   }
 })

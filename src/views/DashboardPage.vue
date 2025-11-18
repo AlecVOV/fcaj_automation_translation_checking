@@ -1,138 +1,259 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useDashboardStore } from '@/stores/dashboardStore'
 
-const route = useRoute()
 const router = useRouter()
 const dashboardStore = useDashboardStore()
 
-const postId = route.params.id as string
-const post = ref<any>(null)
-
 onMounted(async () => {
-  try {
-    post.value = await dashboardStore.getPostById(postId)
-  } catch (error) {
-    console.error('Failed to load post:', error)
-    router.push('/dashboard')
-  }
+  await dashboardStore.fetchPosts()
 })
+
+function getSeverityClass(severity: string) {
+  return `badge-${severity}`
+}
+
+function viewDetails(postId: string) {
+  router.push(`/post/${postId}`)
+}
 </script>
 
 <template>
-  <div class="detail-page">
+  <div class="dashboard">
     <div class="container">
-      <button @click="router.push('/dashboard')" class="btn-back">
-        ← Back to Dashboard
-      </button>
+      <h1>Translation Dashboard</h1>
 
-      <div v-if="post" class="detail-content fade-in">
-        <h1>{{ post.englishTitle }}</h1>
-        <h2>{{ post.vietnameseTitle }}</h2>
-        
-        <div class="info-section">
-          <span class="badge" :class="`severity-${post.severity}`">
-            {{ post.severity }} Errors
-          </span>
-          <span class="error-count">{{ post.errorCount }} errors found</span>
+      <!-- Statistics Summary -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total Posts</h3>
+          <p class="stat-number">{{ dashboardStore.statistics.totalPosts }}</p>
         </div>
-
-        <div class="text-comparison">
-          <div class="text-panel">
-            <h3>Original Text</h3>
-            <p>{{ post.originalText }}</p>
-          </div>
-          <div class="text-panel">
-            <h3>Translated Text</h3>
-            <p>{{ post.translatedText }}</p>
-          </div>
+        <div class="stat-card heavy">
+          <h3>Heavy Errors</h3>
+          <p class="stat-number">{{ dashboardStore.statistics.heavyErrors }}</p>
         </div>
-
-        <div class="ai-analysis">
-          <h3>AI Analysis</h3>
-          <p>Detailed error analysis will appear here...</p>
+        <div class="stat-card medium">
+          <h3>Medium Errors</h3>
+          <p class="stat-number">{{ dashboardStore.statistics.mediumErrors }}</p>
+        </div>
+        <div class="stat-card light">
+          <h3>Light Errors</h3>
+          <p class="stat-number">{{ dashboardStore.statistics.lightErrors }}</p>
         </div>
       </div>
 
-      <div v-else class="loading">
-        <div class="spinner"></div>
-        <p>Loading post details...</p>
+      <!-- Loading State -->
+      <div v-if="dashboardStore.isLoading" class="loading">
+        <p>Loading translations...</p>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="dashboardStore.error" class="error">
+        <p>{{ dashboardStore.error }}</p>
+      </div>
+
+      <!-- Posts List -->
+      <div v-else class="posts-grid">
+        <div 
+          v-for="post in dashboardStore.posts" 
+          :key="post.id" 
+          class="post-card"
+        >
+          <div class="post-header">
+            <h2>{{ post.englishTitle }}</h2>
+            <span :class="['badge', getSeverityClass(post.severity)]">
+              {{ post.severity }}
+            </span>
+          </div>
+          
+          <h3 class="vietnamese-title">{{ post.vietnameseTitle }}</h3>
+          
+          <div class="post-meta">
+            <span class="error-count">{{ post.errorCount }} errors</span>
+            <span class="date">{{ new Date(post.createdAt).toLocaleDateString() }}</span>
+          </div>
+          
+          <div class="post-actions">
+            <button @click="viewDetails(post.id)" class="btn-details">
+              View Details →
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.detail-page {
+.dashboard {
   min-height: calc(100vh - 80px);
-  background: var(--color-gray-light);
-  padding: var(--spacing-lg);
+  background: var(--color-gray-light, #f5f5f5);
+  padding: 2rem;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
-.btn-back {
-  padding: var(--spacing-sm) var(--spacing-lg);
-  background: var(--color-white);
-  border: 2px solid var(--color-primary-navy);
-  color: var(--color-primary-navy);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-weight: 600;
-  margin-bottom: var(--spacing-lg);
-  transition: all var(--transition-fast);
+h1 {
+  margin-bottom: 2rem;
+  color: #232f3e;
 }
 
-.btn-back:hover {
-  background: var(--color-primary-navy);
-  color: var(--color-white);
+/* Statistics Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
 }
 
-.detail-content {
-  background: var(--color-white);
-  padding: var(--spacing-xl);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #232f3e;
 }
 
-.info-section {
+.stat-card.heavy {
+  border-left-color: #d13212;
+}
+
+.stat-card.medium {
+  border-left-color: #ff9900;
+}
+
+.stat-card.light {
+  border-left-color: #1e8900;
+}
+
+.stat-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0;
+  color: #232f3e;
+}
+
+/* Posts Grid */
+.posts-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.post-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.post-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.post-header {
   display: flex;
-  gap: var(--spacing-md);
-  margin: var(--spacing-lg) 0;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 0.5rem;
+}
+
+.post-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #232f3e;
+  flex: 1;
+}
+
+.vietnamese-title {
+  color: #666;
+  font-size: 1rem;
+  margin: 0.5rem 0 1rem 0;
+  font-weight: normal;
 }
 
 .badge {
-  padding: 8px 16px;
-  border-radius: var(--radius-md);
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-heavy {
+  background: #fee;
+  color: #d13212;
+}
+
+.badge-medium {
+  background: #fff4e6;
+  color: #ff9900;
+}
+
+.badge-light {
+  background: #e6f7e6;
+  color: #1e8900;
+}
+
+.post-meta {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.error-count {
   font-weight: 600;
 }
 
-.text-comparison {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-lg);
-  margin: var(--spacing-lg) 0;
+.post-actions {
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
 }
 
-.text-panel {
-  padding: var(--spacing-md);
-  background: var(--color-gray-light);
-  border-radius: var(--radius-md);
+.btn-details {
+  background: #ff9900;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(255, 153, 0, 0.2);
 }
 
-.ai-analysis {
-  margin-top: var(--spacing-lg);
-  padding: var(--spacing-lg);
-  background: var(--color-gray-light);
-  border-radius: var(--radius-md);
+.btn-details:hover {
+  background: #e68a00;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 153, 0, 0.3);
 }
 
-.loading {
+/* Loading and Error States */
+.loading, .error {
   text-align: center;
-  padding: var(--spacing-xl);
+  padding: 3rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.error {
+  color: #d13212;
 }
 </style>
