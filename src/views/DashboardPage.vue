@@ -15,7 +15,7 @@ function getSeverityClass(severity: string) {
 }
 
 function viewDetails(postId: string) {
-  router.push(`/post/${postId}`)
+  router.push(`/admin/post/${postId}`)
 }
 </script>
 
@@ -56,29 +56,23 @@ function viewDetails(postId: string) {
 
       <!-- Posts List -->
       <div v-else class="posts-grid">
-        <div 
-          v-for="post in dashboardStore.posts" 
-          :key="post.id" 
-          class="post-card"
-        >
+        <div v-for="post in dashboardStore.posts" :key="post.id" class="post-card">
           <div class="post-header">
             <h2>{{ post.englishTitle }}</h2>
             <span :class="['badge', getSeverityClass(post.severity)]">
               {{ post.severity }}
             </span>
           </div>
-          
+
           <h3 class="vietnamese-title">{{ post.vietnameseTitle }}</h3>
-          
+
           <div class="post-meta">
             <span class="error-count">{{ post.errorCount }} errors</span>
             <span class="date">{{ new Date(post.createdAt).toLocaleDateString() }}</span>
           </div>
-          
+
           <div class="post-actions">
-            <button @click="viewDetails(post.id)" class="btn-details">
-              View Details →
-            </button>
+            <button @click="viewDetails(post.id)" class="btn-details">View Details →</button>
           </div>
         </div>
       </div>
@@ -156,7 +150,9 @@ h1 {
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .post-card:hover {
@@ -245,7 +241,8 @@ h1 {
 }
 
 /* Loading and Error States */
-.loading, .error {
+.loading,
+.error {
   text-align: center;
   padding: 3rem;
   background: white;

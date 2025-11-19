@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/authStore'
 import NavBar from '@/components/common/NavBar.vue'
 import Footer from '@/components/common/Footer.vue'
 import LoadingScreen from '@/components/common/LoadingScreen.vue'
 
 const isLoading = ref(true)
+const authStore = useAuthStore()
 
 onMounted(() => {
+  // Check authentication
+  authStore.checkAuth()
+
+  // Hide loading screen
   setTimeout(() => {
     isLoading.value = false
   }, 2000)

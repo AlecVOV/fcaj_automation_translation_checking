@@ -6,9 +6,7 @@
       </div>
       <div class="hero-content">
         <h1 class="hero-title">Meet Our Team</h1>
-        <p class="hero-subtitle">
-          Get to know the developers behind FCAJ Translation Validator
-        </p>
+        <p class="hero-subtitle">Get to know the developers behind FCAJ Translation Validator</p>
         <p class="hero-hint">📜 Scroll up to meet each team member</p>
       </div>
     </section>
@@ -25,7 +23,9 @@
             :style="{ '--card-index': index, '--total-cards': teamMembers.length }"
           >
             <div class="sticky-card">
-              <div class="card-number">{{ String(teamMembers.length - index).padStart(2, '0') }}</div>
+              <div class="card-number">
+                {{ String(teamMembers.length - index).padStart(2, '0') }}
+              </div>
               <div class="member-content">
                 <div class="member-image">
                   <img :src="member.image" :alt="member.name" />
@@ -34,7 +34,7 @@
                   <h3 class="member-name">{{ member.name }}</h3>
                   <div class="member-role">{{ member.role }}</div>
                   <div class="member-education">
-                    <strong>School:</strong> {{ member.school }}<br>
+                    <strong>School:</strong> {{ member.school }}<br />
                     <strong>Major:</strong> {{ member.major }}
                   </div>
                   <div class="member-company" v-if="member.company">
@@ -84,8 +84,9 @@ const teamMembers: TeamMember[] = [
     major: 'Artificial Intelligence',
     role: 'AI/ML Ambassador',
     company: 'AWS Study Group',
-    description: 'Passionate about building  web interface and AI-powered solutions. Have experience in Vue.js for buiding web application and AWS services.',
-    contribution: 'Frontend Architecture, UI/UX Design, Prompt Engineering, Project Management'
+    description:
+      'Passionate about building  web interface and AI-powered solutions. Have experience in Vue.js for buiding web application and AWS services.',
+    contribution: 'Frontend Architecture, UI/UX Design, Prompt Engineering, Project Management',
   },
   {
     id: 2,
@@ -94,20 +95,22 @@ const teamMembers: TeamMember[] = [
     school: 'Swinburne University of Technology (Swinburne Vietnam)',
     major: 'Software Development',
     role: 'Cloud Engineer Ambassador',
-    company: "AWS Study Group",
-    description: 'Specialized in natural language processing and machine learning. Led the development of the translation validation AI model.',
-    contribution: 'AI Model Development, Translation Algorithm, Backend Logic'
+    company: 'AWS Study Group',
+    description:
+      'Passionate about building cloud architecture to solve business problem. Have some experience in some compute, network, storage, and serverless AWS services along with basic knowledge for front-end and back-end web development',
+    contribution: 'Solution Architect, Backend Logic',
   },
   {
     id: 3,
     name: 'Phan Nguyen Quoc Viet',
     image: 'phannguyenquocviet.jpg',
     school: 'Swinburne University of Technology (Swinburne Vietnam)',
-    major: "Software Development",
-    role: "Web Security Engineer",
-    company: "AWS Study Group",
-    description: "Passionate about enhancing web security. Experienced in identifying vulnerabilities and implementing secure authentication systems.",
-    contribution: 'Web Security Analysis, Vulnerability Assessment, Secure Authentication Design.'
+    major: 'Software Development',
+    role: 'Web Security Engineer',
+    company: 'AWS Study Group',
+    description:
+      'Passionate about enhancing web security. Experienced in identifying vulnerabilities and implementing secure authentication systems.',
+    contribution: 'Web Security Analysis, Vulnerability Assessment, Secure Authentication Design.',
   },
   {
     id: 4,
@@ -117,8 +120,9 @@ const teamMembers: TeamMember[] = [
     major: 'Software Development',
     role: 'Backend Developer',
     company: 'N/A',
-    description: 'Enthusiastic about building robust, scalable backend systems. Experienced with React.js for building modern UIs and authentication.',
-    contribution: 'Prompt Engineering, Data Cleaning, UI/UX Design, Authentication System.'
+    description:
+      'Enthusiastic about building robust, scalable backend systems. Experienced with React.js for building modern UIs and authentication.',
+    contribution: 'Prompt Engineering, Data Cleaning, UI/UX Design, Authentication System.',
   },
   {
     id: 5,
@@ -126,10 +130,11 @@ const teamMembers: TeamMember[] = [
     image: 'phantruongthinh.JPG',
     school: 'Swinburne University of Technology (Swinburne Vietnam)',
     major: 'Software Development',
-    role: 'Data Analyst',
-    company: 'Analytics Corp',
-    description: 'Data-driven decision maker with expertise in analyzing translation quality metrics and user behavior patterns.',
-    contribution: 'Dashboard Analytics, Data Visualization, Quality Metrics'
+    role: 'Analytics Engineer',
+    company: 'N/A',
+    description:
+      'Enthusiastic about building scalable backend systems. Experienced with React.js for building modern UIs and authentication',
+    contribution: 'Dashboard Analytics, Data Visualization, Quality Metrics',
   },
   {
     id: 6,
@@ -137,11 +142,12 @@ const teamMembers: TeamMember[] = [
     image: 'chungdungtoan.jpg',
     school: 'Swinburne University of Technology (Swinburne Vietnam)',
     major: 'Software Development',
-    role: 'Data Analyst',
-    company: 'Analytics Corp',
-    description: 'Data-driven decision maker with expertise in analyzing translation quality metrics and user behavior patterns.',
-    contribution: 'Dashboard Analytics, Data Visualization, Quality Metrics'
-  }
+    role: 'Analytics Engineer',
+    company: 'N/A',
+    description:
+      'Enthusiastic about building scalable backend systems. Experienced with React.js for building modern UIs and authentication',
+    contribution: 'Dashboard Analytics, Data Visualization, Quality Metrics',
+  },
 ]
 </script>
 
@@ -296,7 +302,7 @@ const teamMembers: TeamMember[] = [
   left: 0;
   right: 0;
   height: 5px;
-  background: linear-gradient(90deg, var(--color-accent-orange), #E67E22);
+  background: linear-gradient(90deg, var(--color-accent-orange), #e67e22);
 }
 
 .sticky-card:hover {
@@ -403,7 +409,8 @@ const teamMembers: TeamMember[] = [
 }
 
 @keyframes wave {
-  0%, 100% {
+  0%,
+  100% {
     transform: rotate(0deg);
   }
   25% {

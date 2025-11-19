@@ -8,8 +8,9 @@ export const mockErrors: Record<string, any[]> = {
       original: 'object storage',
       translated: 'lưu trữ đối tượng',
       suggestion: 'bộ nhớ đối tượng',
-      explanation: 'AWS terminology should use "bộ nhớ" instead of "lưu trữ" for "storage" in technical contexts.',
-      aiRecommendation: 'Use official AWS Vietnamese terminology from aws.amazon.com/vi/'
+      explanation:
+        'AWS terminology should use "bộ nhớ" instead of "lưu trữ" for "storage" in technical contexts.',
+      aiRecommendation: 'Use official AWS Vietnamese terminology from aws.amazon.com/vi/',
     },
     {
       id: 2,
@@ -20,7 +21,7 @@ export const mockErrors: Record<string, any[]> = {
       translated: 'khả năng mở rộng hàng đầu trong ngành',
       suggestion: 'khả năng mở rộng dẫn đầu ngành',
       explanation: 'More natural Vietnamese phrasing while maintaining technical accuracy.',
-      aiRecommendation: 'Simplify the phrase to sound more natural in Vietnamese.'
+      aiRecommendation: 'Simplify the phrase to sound more natural in Vietnamese.',
     },
     {
       id: 3,
@@ -30,8 +31,9 @@ export const mockErrors: Record<string, any[]> = {
       original: 'data availability',
       translated: 'tính khả dụng của dữ liệu',
       suggestion: 'khả năng sẵn sàng của dữ liệu',
-      explanation: 'Incorrect translation affects technical meaning. "Availability" in cloud context refers to uptime/accessibility.',
-      aiRecommendation: 'Use "sẵn sàng" (ready/available) rather than "khả dụng" (usable).'
+      explanation:
+        'Incorrect translation affects technical meaning. "Availability" in cloud context refers to uptime/accessibility.',
+      aiRecommendation: 'Use "sẵn sàng" (ready/available) rather than "khả dụng" (usable).',
     },
     {
       id: 4,
@@ -41,9 +43,10 @@ export const mockErrors: Record<string, any[]> = {
       original: 'performance',
       translated: 'hiệu suất',
       suggestion: 'hiệu năng',
-      explanation: 'While both are acceptable, "hiệu năng" is more commonly used in AWS Vietnamese documentation.',
-      aiRecommendation: 'Align with official AWS terminology for consistency.'
-    }
+      explanation:
+        'While both are acceptable, "hiệu năng" is more commonly used in AWS Vietnamese documentation.',
+      aiRecommendation: 'Align with official AWS terminology for consistency.',
+    },
   ],
   '2': [
     {
@@ -55,7 +58,7 @@ export const mockErrors: Record<string, any[]> = {
       translated: 'học máy',
       suggestion: 'máy học',
       explanation: 'Preferred AWS terminology for machine learning in Vietnamese.',
-      aiRecommendation: 'Follow AWS official translation guidelines.'
+      aiRecommendation: 'Follow AWS official translation guidelines.',
     },
     {
       id: 2,
@@ -66,8 +69,8 @@ export const mockErrors: Record<string, any[]> = {
       translated: 'phân tích tiên tiến',
       suggestion: 'phân tích nâng cao',
       explanation: 'More natural phrasing in Vietnamese technical context.',
-      aiRecommendation: 'Use "nâng cao" for "advanced" in technical contexts.'
-    }
+      aiRecommendation: 'Use "nâng cao" for "advanced" in technical contexts.',
+    },
   ],
   '3': [
     {
@@ -78,8 +81,9 @@ export const mockErrors: Record<string, any[]> = {
       original: 'security',
       translated: 'bảo mật',
       suggestion: 'an ninh',
-      explanation: 'Minor terminology preference. Both are acceptable, but "an ninh" is slightly more formal.',
-      aiRecommendation: 'Consider using "an ninh" for enterprise-level security contexts.'
-    }
-  ]
+      explanation:
+        'Minor terminology preference. Both are acceptable, but "an ninh" is slightly more formal.',
+      aiRecommendation: 'Consider using "an ninh" for enterprise-level security contexts.',
+    },
+  ],
 }

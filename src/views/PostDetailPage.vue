@@ -25,7 +25,7 @@ function getSeverityColor(severity: string) {
   const colors: Record<string, string> = {
     heavy: '#d13212',
     medium: '#ff9900',
-    light: '#1e8900'
+    light: '#1e8900',
   }
   return colors[severity] || '#666'
 }
@@ -34,9 +34,7 @@ function getSeverityColor(severity: string) {
 <template>
   <div class="detail-page">
     <div class="container">
-      <button @click="router.push('/dashboard')" class="btn-back">
-        ← Back to Dashboard
-      </button>
+      <button @click="router.push('/admin/dashboard')" class="btn-back">← Back to Dashboard</button>
 
       <div v-if="post" class="detail-content fade-in">
         <!-- Header -->
@@ -88,9 +86,9 @@ function getSeverityColor(severity: string) {
           </p>
 
           <div class="errors-list">
-            <div 
-              v-for="error in errors" 
-              :key="error.id" 
+            <div
+              v-for="error in errors"
+              :key="error.id"
               class="error-card"
               :class="`severity-${error.severity}`"
             >
@@ -132,11 +130,11 @@ function getSeverityColor(severity: string) {
         </div>
 
         <!-- Actions -->
-        <div class="action-buttons">
+        <!-- <div class="action-buttons">
           <button class="btn-export">📥 Export Report</button>
           <button class="btn-approve">✅ Mark as Reviewed</button>
           <button class="btn-edit">✏️ Edit Translation</button>
-        </div>
+        </div> -->
       </div>
 
       <div v-else class="loading">
@@ -523,7 +521,9 @@ function getSeverityColor(severity: string) {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive */
