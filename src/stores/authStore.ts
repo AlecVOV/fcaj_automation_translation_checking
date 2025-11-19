@@ -27,7 +27,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (adminEmails.includes(email.toLowerCase())) {
       currentUser.value = {
         email: email.toLowerCase(),
-        name: email.split('@')[0],
+        name: email.split('@')[0] || 'Admin',
         role: 'admin',
       }
       isAuthenticated.value = true
@@ -39,6 +39,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
     return false
   }
+  // ...existing code...
 
   function logout() {
     currentUser.value = null
