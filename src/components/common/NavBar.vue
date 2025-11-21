@@ -61,6 +61,11 @@ const handleLogout = () => {
             <li>
               <router-link to="/" class="nav-link">Validate Translation</router-link>
             </li>
+            <li>
+              <router-link to="/prompt-generator" class="nav-link"
+                >Validate Translation</router-link
+              >
+            </li>
 
             <!-- Admin-only links -->
             <template v-if="authStore.isAdmin">

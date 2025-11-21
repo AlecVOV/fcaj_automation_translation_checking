@@ -11,6 +11,12 @@ const router = createRouter({
       meta: { title: 'Validate Translation' },
     },
     {
+      path: '/prompt-generator',
+      name: 'prompt-generator',
+      component: () => import('@/views/PromptGenerated.vue'),
+      meta: { title: 'Prompt Generate' },
+    },
+    {
       path: '/admin',
       name: 'admin-login',
       component: () => import('@/views/AdminLoginPage.vue'),
