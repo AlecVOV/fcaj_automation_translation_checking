@@ -62,9 +62,7 @@ const handleLogout = () => {
               <router-link to="/" class="nav-link">Validate Translation</router-link>
             </li>
             <li>
-              <router-link to="/prompt-generator" class="nav-link"
-                >Validate Translation</router-link
-              >
+              <router-link to="/prompt-generator" class="nav-link">Prompt Generator</router-link>
             </li>
 
             <!-- Admin-only links -->

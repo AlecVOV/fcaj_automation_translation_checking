@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDashboardStore } from '@/stores/dashboardStore'
+import ErrorCard from '@/components/post/ErrorCard.vue'
+import CorrectedBlogPreview from '@/components/post/CorrectedBlogPreview.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -10,16 +12,39 @@ const dashboardStore = useDashboardStore()
 const postId = route.params.id as string
 const post = ref<any>(null)
 const errors = ref<any[]>([])
+const acceptedErrorIndices = ref<number[]>([])
+
+// Mock translated markdown content
+const translatedMarkdown = ref('')
 
 onMounted(async () => {
   try {
     post.value = await dashboardStore.getPostById(postId)
     errors.value = await dashboardStore.getPostErrors(postId)
+
+    // Generate markdown from post data
+    if (post.value) {
+      translatedMarkdown.value = generateMarkdownFromPost(post.value)
+    }
   } catch (error) {
     console.error('Failed to load post:', error)
-    router.push('/dashboard')
+    router.push('/admin/dashboard')
   }
 })
+
+// Generate markdown content from post
+function generateMarkdownFromPost(postData: any): string {
+  return `# ${postData.vietnameseTitle}
+
+## Giới thiệu
+
+${postData.translatedText}
+
+---
+
+*Bài viết được dịch bởi FCAJ Translation Team*
+`
+}
 
 function getSeverityColor(severity: string) {
   const colors: Record<string, string> = {
@@ -29,6 +54,46 @@ function getSeverityColor(severity: string) {
   }
   return colors[severity] || '#666'
 }
+
+// Handle accepting individual error
+function handleAcceptError(errorIndex: number) {
+  if (!acceptedErrorIndices.value.includes(errorIndex)) {
+    acceptedErrorIndices.value.push(errorIndex)
+  }
+}
+
+// Accept all errors
+function handleAcceptAll() {
+  acceptedErrorIndices.value = errors.value.map((_, index) => index)
+}
+
+// Reset all accepted errors
+function handleResetAll() {
+  acceptedErrorIndices.value = []
+}
+
+// Check if error is accepted
+function isErrorAccepted(index: number): boolean {
+  return acceptedErrorIndices.value.includes(index)
+}
+
+// Computed properties
+const acceptedCount = computed(() => acceptedErrorIndices.value.length)
+
+const getSeverityStats = computed(() => {
+  const stats = { heavy: 0, medium: 0, light: 0 }
+  errors.value.forEach((error: any) => {
+    if (stats[error.severity as keyof typeof stats] !== undefined) {
+      stats[error.severity as keyof typeof stats]++
+    }
+  })
+  return stats
+})
+
+const progressPercentage = computed(() => {
+  if (errors.value.length === 0) return 0
+  return (acceptedCount.value / errors.value.length) * 100
+})
 </script>
 
 <template>
@@ -66,75 +131,87 @@ function getSeverityColor(severity: string) {
           </div>
         </div>
 
-        <!-- Text Comparison -->
-        <div class="text-comparison">
-          <div class="text-panel original">
-            <h3>📄 Original Text (English)</h3>
-            <div class="text-content">{{ post.originalText }}</div>
+        <!-- Correction Progress Card -->
+        <div class="progress-card">
+          <h3>✓ Corrections Progress</h3>
+          <div class="progress-container">
+            <div class="progress-bar">
+              <div class="progress-fill" :style="{ width: `${progressPercentage}%` }"></div>
+            </div>
+            <span class="progress-text"
+              >{{ acceptedCount }} / {{ errors.length }} corrections accepted</span
+            >
           </div>
-          <div class="text-panel translated">
-            <h3>🌐 Translated Text (Vietnamese)</h3>
-            <div class="text-content">{{ post.translatedText }}</div>
+
+          <div class="severity-breakdown">
+            <div class="severity-stat heavy">
+              <span class="count">{{ getSeverityStats.heavy }}</span>
+              <span class="label">Heavy</span>
+            </div>
+            <div class="severity-stat medium">
+              <span class="count">{{ getSeverityStats.medium }}</span>
+              <span class="label">Medium</span>
+            </div>
+            <div class="severity-stat light">
+              <span class="count">{{ getSeverityStats.light }}</span>
+              <span class="label">Light</span>
+            </div>
+          </div>
+
+          <div class="bulk-actions">
+            <button class="bulk-btn accept-all" @click="handleAcceptAll">
+              ✓ Accept All Suggestions
+            </button>
+            <button class="bulk-btn reset-all" @click="handleResetAll">↺ Reset All</button>
           </div>
         </div>
 
-        <!-- Error Details -->
-        <div class="error-section">
-          <h2>🔍 Detailed Error Analysis</h2>
-          <p class="error-intro">
-            AI-powered analysis has identified {{ errors.length }} issue(s) requiring attention:
-          </p>
+        <!-- Two Column Layout: Errors + Preview -->
+        <div class="two-column-layout">
+          <!-- Left Column: Error Cards -->
+          <div class="errors-column">
+            <h2>🔍 Detailed Error Analysis</h2>
+            <p class="error-intro">
+              AI-powered analysis has identified {{ errors.length }} issue(s) requiring attention.
+              Click "Accept" to apply corrections.
+            </p>
 
-          <div class="errors-list">
-            <div
-              v-for="error in errors"
-              :key="error.id"
-              class="error-card"
-              :class="`severity-${error.severity}`"
-            >
-              <div class="error-header">
-                <div class="error-title">
-                  <span class="error-number">#{{ error.id }}</span>
-                  <span class="error-type">{{ error.type }}</span>
-                  <span class="error-badge" :class="`badge-${error.severity}`">
-                    {{ error.severity }}
-                  </span>
-                </div>
-                <div class="error-location">{{ error.location }}</div>
-              </div>
+            <div class="errors-list">
+              <ErrorCard
+                v-for="(error, index) in errors"
+                :key="error.id || index"
+                :error="error"
+                :index="index"
+                :is-accepted="isErrorAccepted(index)"
+                @accept="handleAcceptError"
+              />
+            </div>
+          </div>
 
-              <div class="error-body">
-                <div class="error-row">
-                  <strong>Original:</strong>
-                  <span class="text-original">"{{ error.original }}"</span>
-                </div>
-                <div class="error-row">
-                  <strong>Current Translation:</strong>
-                  <span class="text-current">"{{ error.translated }}"</span>
-                </div>
-                <div class="error-row">
-                  <strong>Suggested Fix:</strong>
-                  <span class="text-suggestion">"{{ error.suggestion }}"</span>
-                </div>
-                <div class="error-explanation">
-                  <strong>💡 Explanation:</strong>
-                  <p>{{ error.explanation }}</p>
-                </div>
-                <div class="ai-recommendation">
-                  <strong>🤖 AI Recommendation:</strong>
-                  <p>{{ error.aiRecommendation }}</p>
-                </div>
-              </div>
+          <!-- Right Column: Corrected Blog Preview -->
+          <div class="preview-column">
+            <CorrectedBlogPreview
+              :original-markdown="translatedMarkdown"
+              :errors="errors"
+              :accepted-error-indices="acceptedErrorIndices"
+            />
+          </div>
+        </div>
+
+        <!-- Text Comparison (Original vs Translated) -->
+        <div class="text-comparison">
+          <h2>📝 Original Text Comparison</h2>
+          <div class="comparison-grid">
+            <div class="text-panel original">
+              <h3>📄 Original Text (English)</h3>
+              <div class="text-content">{{ post.originalText }}</div>
+            </div>
+            <div class="text-panel translated">
+              <h3>🌐 Translated Text (Vietnamese)</h3>
+              <div class="text-content">{{ post.translatedText }}</div>
             </div>
           </div>
         </div>
-
-        <!-- Actions -->
-        <!-- <div class="action-buttons">
-          <button class="btn-export">📥 Export Report</button>
-          <button class="btn-approve">✅ Mark as Reviewed</button>
-          <button class="btn-edit">✏️ Edit Translation</button>
-        </div> -->
       </div>
 
       <div v-else class="loading">
@@ -153,7 +230,7 @@ function getSeverityColor(severity: string) {
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
 }
 
@@ -258,12 +335,177 @@ function getSeverityColor(severity: string) {
   color: #232f3e;
 }
 
+/* Progress Card */
+.progress-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 2px solid #e0e0e0;
+}
+
+.progress-card h3 {
+  margin: 0 0 1rem 0;
+  color: #232f3e;
+  font-size: 1.2rem;
+}
+
+.progress-container {
+  margin-bottom: 1rem;
+}
+
+.progress-bar {
+  height: 12px;
+  background: #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50, #8bc34a);
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.severity-breakdown {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.severity-stat {
+  flex: 1;
+  text-align: center;
+  padding: 0.75rem;
+  border-radius: 8px;
+}
+
+.severity-stat.heavy {
+  background: #fdeaea;
+}
+.severity-stat.medium {
+  background: #fef6e7;
+}
+.severity-stat.light {
+  background: #e8f4fc;
+}
+
+.severity-stat .count {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #232f3e;
+}
+
+.severity-stat .label {
+  font-size: 0.8rem;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.bulk-btn {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-size: 0.95rem;
+}
+
+.accept-all {
+  background: #4caf50;
+  color: white;
+}
+
+.accept-all:hover {
+  background: #43a047;
+}
+
+.reset-all {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.reset-all:hover {
+  background: #bdbdbd;
+}
+
+/* Two Column Layout */
+.two-column-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  align-items: start;
+}
+
+.errors-column h2 {
+  font-size: 1.5rem;
+  color: #232f3e;
+  margin: 0 0 0.5rem 0;
+}
+
+.error-intro {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.errors-list {
+  max-height: 800px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+/* Scrollbar styling */
+.errors-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.errors-list::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+.errors-list::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-radius: 4px;
+}
+
+.errors-list::-webkit-scrollbar-thumb:hover {
+  background: #a0a0a0;
+}
+
 /* Text Comparison */
 .text-comparison {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid #f0f0f0;
+}
+
+.text-comparison h2 {
+  font-size: 1.5rem;
+  color: #232f3e;
+  margin: 0 0 1.5rem 0;
+}
+
+.comparison-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
-  margin-bottom: 2rem;
 }
 
 .text-panel {
@@ -293,215 +535,6 @@ function getSeverityColor(severity: string) {
   border-color: #ff9900;
 }
 
-/* Error Section */
-.error-section {
-  margin-top: 2rem;
-}
-
-.error-section h2 {
-  font-size: 1.5rem;
-  color: #232f3e;
-  margin-bottom: 0.5rem;
-}
-
-.error-intro {
-  color: #666;
-  margin-bottom: 1.5rem;
-}
-
-.errors-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.error-card {
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  overflow: hidden;
-  transition: all 0.3s;
-}
-
-.error-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-
-.error-card.severity-heavy {
-  border-left: 5px solid #d13212;
-}
-
-.error-card.severity-medium {
-  border-left: 5px solid #ff9900;
-}
-
-.error-card.severity-light {
-  border-left: 5px solid #1e8900;
-}
-
-.error-header {
-  background: #f8f9fa;
-  padding: 1rem 1.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.error-title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.error-number {
-  font-weight: 700;
-  color: #666;
-}
-
-.error-type {
-  font-weight: 600;
-  color: #232f3e;
-}
-
-.error-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.badge-heavy {
-  background: #d13212;
-  color: white;
-}
-
-.badge-medium {
-  background: #ff9900;
-  color: white;
-}
-
-.badge-light {
-  background: #1e8900;
-  color: white;
-}
-
-.error-location {
-  font-size: 0.85rem;
-  color: #666;
-  font-family: monospace;
-}
-
-.error-body {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.error-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.error-row strong {
-  color: #232f3e;
-  font-size: 0.9rem;
-}
-
-.text-original {
-  color: #0073bb;
-  font-style: italic;
-}
-
-.text-current {
-  color: #d13212;
-  font-weight: 500;
-}
-
-.text-suggestion {
-  color: #1e8900;
-  font-weight: 600;
-  background: #e6f7e6;
-  padding: 0.5rem;
-  border-radius: 4px;
-}
-
-.error-explanation,
-.ai-recommendation {
-  background: #f8f9fa;
-  padding: 1rem;
-  border-radius: 6px;
-  border-left: 3px solid #ff9900;
-}
-
-.error-explanation strong,
-.ai-recommendation strong {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #232f3e;
-}
-
-.error-explanation p,
-.ai-recommendation p {
-  margin: 0;
-  color: #444;
-  line-height: 1.6;
-}
-
-.ai-recommendation {
-  border-left-color: #0073bb;
-  background: #f0f8ff;
-}
-
-/* Action Buttons */
-.action-buttons {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 2px solid #f0f0f0;
-}
-
-.action-buttons button {
-  flex: 1;
-  padding: 1rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.95rem;
-}
-
-.btn-export {
-  background: #232f3e;
-  color: white;
-}
-
-.btn-export:hover {
-  background: #1a2229;
-}
-
-.btn-approve {
-  background: #1e8900;
-  color: white;
-}
-
-.btn-approve:hover {
-  background: #176e00;
-}
-
-.btn-edit {
-  background: #ff9900;
-  color: white;
-}
-
-.btn-edit:hover {
-  background: #e68a00;
-}
-
 /* Loading */
 .loading {
   text-align: center;
@@ -527,13 +560,31 @@ function getSeverityColor(severity: string) {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-  .text-comparison {
+@media (max-width: 1200px) {
+  .two-column-layout {
     grid-template-columns: 1fr;
   }
 
-  .action-buttons {
+  .errors-list {
+    max-height: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .detail-page {
+    padding: 1rem;
+  }
+
+  .comparison-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bulk-actions {
     flex-direction: column;
+  }
+
+  .severity-breakdown {
+    flex-wrap: wrap;
   }
 }
 </style>
