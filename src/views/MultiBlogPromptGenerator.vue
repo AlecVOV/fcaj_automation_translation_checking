@@ -1,97 +1,76 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-const originalText = ref('')
-const translatedText = ref('')
+interface BlogPair {
+  id: number
+  original: string
+  translated: string
+}
+
+const blogs = ref<BlogPair[]>([
+  { id: 1, original: '', translated: '' },
+  { id: 2, original: '', translated: '' },
+  { id: 3, original: '', translated: '' },
+])
 
 const fullPrompt = computed(() => {
-  return `[LƯU Ý QUAN TRỌNG DÀNH CHO AI]
-Đây là một prompt có cấu trúc. Nhiệm vụ của bạn là **THỰC THI** các hướng dẫn bên dưới (như [Role], [Objectives]) để hiệu đính văn bản trong [Context].
-**KHÔNG** phân tích, debug, hay chỉnh sửa cấu trúc của chính cái prompt này. Hãy nhập vai và làm theo yêu cầu.
+  let prompt = `[LƯU Ý QUAN TRỌNG DÀNH CHO AI]
+Đây là một prompt có cấu trúc. Nhiệm vụ của bạn là **THỰC THI** các hướng dẫn bên dưới để hiệu đính 3 bài blog trong [Context].
 
 # [Role]
 Bạn là kiến trúc sư hệ thống với 20+ năm kinh nghiệm về cloud computing, hiện là chuyên gia tại AWS. Bạn có kinh nghiệm dịch cabin và chuyên hiệu đính các bài blog/kỹ thuật của AWS.
 
-# [Personality]
-Khó tính, cầu toàn, soi kỹ từng từ/câu. Ưu tiên tính chính xác và tự nhiên trong tiếng Việt. Không bỏ sót lỗi nhỏ.
-
 # [Objectives]
-Bạn nhận **[Bài Gốc]** (EN) và **[Bài đã dịch]** (VI) trong **[Context]**. Hãy:
+Kiểm tra và hiệu đính 3 bài blog được cung cấp trong [Context]. Với mỗi bài:
 1. **Rà soát tiêu đề thật kỹ** (ý nghĩa, phong cách, thuật ngữ).
-2. **Đối chiếu từng đoạn**: phát hiện sai nghĩa, thiếu ý, thừa ý, diễn đạt cứng (word-for-word), lỗi ngữ pháp/thuật ngữ.
-3. **Giữ nguyên tên dịch vụ/thuộc tính AWS** (không dịch, đúng chữ hoa/thương, đúng brand: *Amazon S3*, *AWS Lambda*, *EC2*, *VPC*, *Availability Zone*, v.v.).
-4. **Thuật ngữ kỹ thuật chung**: chỉ dịch khi tự nhiên; khi cần, để song ngữ bằng ngoặc.
-5. **Đề xuất bản sửa** dễ đọc cho người mới, nhưng **không làm sai nội dung kỹ thuật**.
-6. **Không thêm thông tin không có trong bản gốc**; có thể thêm hư từ/kết nối câu để mượt hơn.
+2. **Đối chiếu từng đoạn**: phát hiện sai nghĩa, thiếu ý, thừa ý, diễn đạt cứng.
+3. **Giữ nguyên tên dịch vụ/thuộc tính AWS**.
+4. **Đảm bảo tính tự nhiên, trôi chảy** trong tiếng Việt.
+5. **Chú ý ngữ cảnh kỹ thuật** để tránh sai sót chuyên môn.
+6. **Chỉ cần đưa ra đánh giá điểm số từ 0 đến 1.50**.
 
 # [Context]
 
-## [Bài Gốc]
-${originalText.value}
+`
 
-## [Bài đã dịch]
-${translatedText.value}
+  blogs.value.forEach((blog, index) => {
+    if (blog.original || blog.translated) {
+      prompt += `## Bài ${index + 1}
 
-# [Style Guide]
-* **Đối tượng**: người mới học CS hoặc ít kiến thức công nghệ.
-* **Giọng văn**: diễn giải, mạch lạc, gần gũi; tránh khẩu ngữ quá mức.
-* **Thuật ngữ**: giữ chuẩn ngành; không "Việt hoá" quá đà.
-* **Song ngữ khi cần**: *thuật ngữ (term)* ở **lần xuất hiện đầu** mỗi thuật ngữ quan trọng.
-  * Ví dụ: *endpoint → điểm cuối (endpoint)*
-  * *on-premises → tại chỗ (on-premises)*
-* **Giữ nguyên**: code blocks, tên API/SDK/CLI, tham số, JSON keys, tên màn hình Console, tên nút, output logs, câu lệnh shell, đường dẫn, URLs, region codes, dung lượng/đơn vị (GiB vs GB).
-* **Số & đơn vị**: không tự đổi (ms ↔ s, $ ↔ VND).
-* **Liên kết**: giữ link, dịch anchor text nếu là văn bản thuần.
-* **Dấu câu & chính tả**: tiếng Việt chuẩn, nhất quán cách viết hoa tên riêng.
+### [Bài Gốc ${index + 1}]
+${blog.original || '(Chưa có nội dung)'}
 
-# [Terminology Rules]
-* **Không dịch tên dịch vụ AWS** và thành phần sản phẩm (ví dụ: *Amazon S3, Amazon EC2, AWS IAM, AWS KMS, CloudWatch Logs, Availability Zone, VPC, Subnet, NAT Gateway*…).
-* **Từ chung nên dịch (kèm EN khi cần)**:
+### [Bài đã dịch ${index + 1}]
+${blog.translated || '(Chưa có nội dung)'}
 
-  * *endpoint → điểm cuối (endpoint)*
-  * *availability zone → vùng khả dụng (Availability Zone)*
-  * *fault tolerance → chịu lỗi (fault tolerance)*
-  * *throughput → thông lượng (throughput)*
-  * *latency → độ trễ (latency)*
-* **Nhất quán thuật ngữ trong toàn bài** (dùng cùng một cách dịch cho cùng một khái niệm).
+---
 
-# [Quy trình thực hiện]
-1. **Tiền kiểm**: quét nhanh để lập danh sách thuật ngữ trọng yếu; đánh dấu chỗ có code/CLI/JSON để không sửa sai.
-2. **Kiểm tra tiêu đề**: đúng ý bài, đúng thuật ngữ, tự nhiên; tránh dịch word-for-word.
-3. **Đối chiếu từng đoạn**:
+`
+    }
+  })
 
-   * So meaning (dịch có đủ ý? có sai lệch?)
-   * So terminology (chuẩn, nhất quán?)
-   * So fluency (tự nhiên, tránh dịch cứng?)
-   * So format (giữ code, tham số, link, bảng, bullet?)
-4. **Ghi lỗi** theo mẫu [Format] và **gợi ý chỉnh**.
-5. **Tóm tắt thay đổi chính** (tùy chọn) để người đọc nắm nhanh.
+  prompt +=
+    `# [Format Output]
+Với mỗi bài blog, hãy đưa ra thang điểm đánh giá từ 0 đến 1.50 dựa trên mức độ chính xác và tự nhiên của bản dịch. Sau đó, trả về theo định dạng sau:
+⛔️ **QUAN TRỌNG - YÊU CẦU BẮT BUỘC:**
+1. **CHỈ** trả về kết quả theo đúng định dạng mẫu bên dưới.
+2. **TUYỆT ĐỐI KHÔNG** đưa ra bất kỳ lời giải thích, phân tích chi tiết, "Expert Notes", hay gợi ý sửa lỗi nào.
+3. **KHÔNG** viết lời mở đầu (ví dụ: "Chào bạn...", "Dưới đây là kết quả...") hay lời kết thúc.
 
-# [Mức độ lỗi]
-* **Critical**: sai nghĩa/thiếu ý ảnh hưởng hiểu nhầm kỹ thuật.
-* **Major**: dùng thuật ngữ chưa chuẩn, diễn đạt gây khó hiểu cho người mới.
-* **Minor**: ngữ pháp, chính tả, dấu câu, mượt câu.
+` +
+    `
 
-# [Format] (đầu ra)
-**A. Báo cáo lỗi** — liệt kê theo thứ tự xuất hiện:
-* **Đoạn [Số đoạn, tên đoạn (nếu có), bắt đầu bằng: "…"]**
+**Bài 1:**
+* **Tên Bài**: [Tên của bài 1]
+* **Điểm đánh giá**: [Con số đưa ra cho bài 1]
 
-  * **Bản dịch hiện tại**: …
-  * **Bản gốc (EN)**: …
-  * **Gợi ý chỉnh sửa**: …
-  * **Mức độ**: Critical/Major/Minor
-  * **Lý giải**: vì sao cần sửa (nghĩa/thuật ngữ/độ tự nhiên/định dạng…)
+**Bài 2:**
+[Tương tự]
 
-**B. Bảng thuật ngữ (tùy chọn)**
-| Thuật ngữ EN      | Cách dùng trong bài               | Ghi chú                     |
-| ----------------- | --------------------------------- | --------------------------- |
-| Availability Zone | vùng khả dụng (Availability Zone) | Giữ EN khi cần độ chính xác |
+**Bài 3:**
+[Tương tự]`
 
-# [Tiêu chí kiểm tra tiêu đề]
-* Truyền tải đúng chủ đề/kết quả chính của bài.
-* Dùng đúng thuật ngữ ngành; tránh "dịch thẳng" gây gượng.
-* Ngắn gọn, dễ hiểu với người mới (≤ 85 ký tự nếu có thể).
-* Không dịch tên dịch vụ AWS trong tiêu đề.`
+  return prompt
 })
 
 const copyToClipboard = async () => {
@@ -105,52 +84,57 @@ const copyToClipboard = async () => {
 }
 
 const clearInputs = () => {
-  originalText.value = ''
-  translatedText.value = ''
+  blogs.value.forEach((blog) => {
+    blog.original = ''
+    blog.translated = ''
+  })
 }
 </script>
 
 <template>
-  <div class="home-page">
+  <div class="multi-blog-page">
     <!-- Hero Section -->
     <section class="hero fade-in">
       <div class="hero-background">
         <div class="animated-gradient"></div>
       </div>
       <div class="hero-content">
-        <h1 class="hero-title">Prompt Generator for manual validation</h1>
-        <p class="hero-subtitle">
-          Generate a complete AWS translation validation prompt to use with Gemini AI
-        </p>
+        <h1 class="hero-title">Multi-Blog Prompt Generator</h1>
+        <p class="hero-subtitle">Generate validation prompts for 3 AWS blog translations at once</p>
       </div>
     </section>
 
-    <!-- Prompt Generation Form -->
+    <!-- Validation Form -->
     <section class="validation-section">
       <div class="container">
-        <div class="input-grid">
-          <!-- Original Text -->
-          <div class="input-panel card-hover">
-            <label class="input-label">Original Text (English)</label>
-            <textarea
-              v-model="originalText"
-              class="text-input"
-              placeholder="Paste your original AWS blog post here..."
-              rows="18"
-            ></textarea>
-            <div class="char-count">{{ originalText.length }} characters</div>
-          </div>
+        <!-- Loop through 3 blogs -->
+        <div v-for="blog in blogs" :key="blog.id" class="blog-section">
+          <h2 class="blog-title">Blog {{ blog.id }}</h2>
 
-          <!-- Translated Text -->
-          <div class="input-panel card-hover">
-            <label class="input-label">Translated Text (Vietnamese)</label>
-            <textarea
-              v-model="translatedText"
-              class="text-input"
-              placeholder="Paste your translated blog post here..."
-              rows="18"
-            ></textarea>
-            <div class="char-count">{{ translatedText.length }} characters</div>
+          <div class="input-grid">
+            <!-- Original Text -->
+            <div class="input-panel card-hover">
+              <label class="input-label">Original Text (English)</label>
+              <textarea
+                v-model="blog.original"
+                class="text-input"
+                :placeholder="`Paste original blog ${blog.id} here...`"
+                rows="12"
+              ></textarea>
+              <div class="char-count">{{ blog.original.length }} characters</div>
+            </div>
+
+            <!-- Translated Text -->
+            <div class="input-panel card-hover">
+              <label class="input-label">Translated Text (Vietnamese)</label>
+              <textarea
+                v-model="blog.translated"
+                class="text-input"
+                :placeholder="`Paste translated blog ${blog.id} here...`"
+                rows="12"
+              ></textarea>
+              <div class="char-count">{{ blog.translated.length }} characters</div>
+            </div>
           </div>
         </div>
 
@@ -161,7 +145,7 @@ const clearInputs = () => {
             :value="fullPrompt"
             class="text-input prompt-preview"
             readonly
-            rows="20"
+            rows="25"
           ></textarea>
           <div class="char-count">{{ fullPrompt.length }} characters</div>
         </div>
@@ -177,7 +161,7 @@ const clearInputs = () => {
 </template>
 
 <style scoped>
-.home-page {
+.multi-blog-page {
   min-height: calc(100vh - 80px);
 }
 
@@ -285,18 +269,40 @@ const clearInputs = () => {
   margin: 0 auto;
 }
 
+.blog-section {
+  background: var(--color-white);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-xl);
+  box-shadow: var(--shadow-card);
+  border-left: 4px solid var(--color-accent-orange);
+}
+
+.blog-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-primary-navy);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.blog-title::before {
+  content: '📝';
+  font-size: 28px;
+}
+
 .input-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
 }
 
 .input-panel {
-  background: var(--color-white);
+  background: #f8f9fa;
   padding: var(--spacing-md);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
 }

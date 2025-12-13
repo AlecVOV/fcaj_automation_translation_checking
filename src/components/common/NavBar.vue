@@ -64,6 +64,9 @@ const handleLogout = () => {
             <li>
               <router-link to="/prompt-generator" class="nav-link">Prompt Generator</router-link>
             </li>
+            <li>
+              <router-link to="/multi-blog-prompt" class="nav-link">Multi-Blog Prompt</router-link>
+            </li>
 
             <!-- Admin-only links -->
             <template v-if="authStore.isAdmin">

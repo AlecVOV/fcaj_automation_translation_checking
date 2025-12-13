@@ -17,6 +17,12 @@ const router = createRouter({
       meta: { title: 'Prompt Generate' },
     },
     {
+      path: '/multi-blog-prompt',
+      name: 'multi-blog-prompt',
+      component: () => import('@/views/MultiBlogPromptGenerator.vue'),
+      meta: { title: 'Multi-Blog Prompt Generator' },
+    },
+    {
       path: '/admin',
       name: 'admin-login',
       component: () => import('@/views/AdminLoginPage.vue'),
