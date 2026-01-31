@@ -11,7 +11,7 @@ const router = createRouter({
       meta: { title: 'Validate Translation' },
     },
     {
-      path: '/prompt-generator',
+      path: '/admin/prompt-generator',
       name: 'prompt-generator',
       component: () => import('@/views/PromptGenerated.vue'),
       meta: { title: 'Prompt Generate' },
