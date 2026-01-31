@@ -12,10 +12,12 @@
               <img src="/LOGO_AWS_FACJ.png" alt="FCAJ Logo" class="logo" />
             </div>
             <h1>Admin Login</h1>
-            <p>Enter your admin email to access the dashboard</p>
+            <p v-if="!authStore.awaitingOTP">Enter your email to receive a verification code</p>
+            <p v-else>Check your email for the verification code</p>
           </div>
 
-          <form @submit.prevent="handleLogin" class="login-form">
+          <!-- STEP 1: Enter Email -->
+          <form v-if="!authStore.awaitingOTP" @submit.prevent="handleRequestOTP" class="login-form">
             <div class="form-group">
               <label for="email">Email Address</label>
               <input
@@ -24,23 +26,93 @@
                 type="email"
                 placeholder="admin@fcaj.vn"
                 class="input-field"
-                :disabled="isLoading"
+                :disabled="authStore.loading"
                 required
+                autocomplete="email"
               />
             </div>
 
-            <div v-if="errorMessage" class="error-message">
-              <span class="error-icon">⚠️</span>
-              {{ errorMessage }}
+            <div v-if="authStore.error" class="error-message">
+              {{ authStore.error }}
             </div>
 
-            <button type="submit" class="btn-login" :disabled="isLoading">
-              <span v-if="!isLoading"> Login </span>
+            <button type="submit" class="btn-login" :disabled="authStore.loading">
+              <span v-if="!authStore.loading">Send Verification Code</span>
+              <span v-else class="loading-content">
+                <span class="spinner-small"></span>
+                Sending...
+              </span>
+            </button>
+          </form>
+
+          <!-- STEP 2: Enter OTP Code -->
+          <form v-else @submit.prevent="handleVerifyOTP" class="login-form">
+            <div class="otp-info">
+              <p>
+                We've sent a 6-digit code to<br>
+                <strong>{{ email }}</strong>
+              </p>
+              <div v-if="countdown > 0" class="countdown">
+                Code expires in {{ formatCountdown(countdown) }}
+              </div>
+              <div v-else class="countdown expired">
+                Code expired
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="otp">Verification Code</label>
+              <input
+                id="otp"
+                v-model="otpCode"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                placeholder="000000"
+                maxlength="6"
+                required
+                autocomplete="one-time-code"
+                :disabled="authStore.loading || countdown <= 0"
+                class="input-field otp-input"
+              />
+            </div>
+
+            <div v-if="authStore.error" class="error-message">
+              {{ authStore.error }}
+            </div>
+
+            <button 
+              type="submit" 
+              class="btn-login" 
+              :disabled="authStore.loading || countdown <= 0"
+            >
+              <span v-if="!authStore.loading">Verify & Login</span>
               <span v-else class="loading-content">
                 <span class="spinner-small"></span>
                 Verifying...
               </span>
             </button>
+
+            <div class="otp-actions">
+              <button 
+                type="button" 
+                @click="handleResendOTP" 
+                class="btn-secondary"
+                :disabled="authStore.loading || countdown > 240"
+              >
+                Resend Code
+                <span v-if="countdown > 240">({{ Math.ceil((countdown - 240) / 60) }}m)</span>
+              </button>
+
+              <button 
+                type="button" 
+                @click="handleBack" 
+                class="btn-secondary"
+                :disabled="authStore.loading"
+              >
+                Use different email
+              </button>
+            </div>
           </form>
 
           <div class="back-link">
@@ -53,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -61,32 +133,81 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const email = ref('')
-const isLoading = ref(false)
-const errorMessage = ref('')
+const otpCode = ref('')
+const countdown = ref(0)
+let countdownInterval: number | null = null
 
-const handleLogin = async () => {
+onMounted(async () => {
+  if (authStore.isAdmin) {
+    router.push('/admin/dashboard')
+  }
+})
+
+async function handleRequestOTP() {
   if (!email.value) {
-    errorMessage.value = 'Please enter your email'
+    authStore.error = 'Please enter your email address'
     return
   }
 
-  isLoading.value = true
-  errorMessage.value = ''
+  const success = await authStore.requestOTP(email.value)
 
-  try {
-    const success = await authStore.login(email.value)
-
-    if (success) {
-      router.push('/admin/dashboard')
-    } else {
-      errorMessage.value = 'Access denied. Only admin emails are allowed.'
-      email.value = ''
-    }
-  } catch (error) {
-    errorMessage.value = 'Login failed. Please try again.'
-  } finally {
-    isLoading.value = false
+  if (success) {
+    countdown.value = 300 // 5 minutes
+    startCountdown()
   }
+}
+
+async function handleVerifyOTP() {
+  if (!otpCode.value) {
+    authStore.error = 'Please enter the verification code'
+    return
+  }
+
+  const success = await authStore.verifyOTP(otpCode.value)
+
+  if (success && authStore.isAdmin) {
+    stopCountdown()
+    router.push('/admin/dashboard')
+  }
+}
+
+async function handleResendOTP() {
+  const success = await authStore.resendOTP()
+  if (success) {
+    otpCode.value = ''
+    countdown.value = 300
+    startCountdown()
+  }
+}
+
+function startCountdown() {
+  stopCountdown()
+  countdownInterval = window.setInterval(() => {
+    countdown.value--
+    if (countdown.value <= 0) {
+      stopCountdown()
+    }
+  }, 1000)
+}
+
+function stopCountdown() {
+  if (countdownInterval) {
+    clearInterval(countdownInterval)
+    countdownInterval = null
+  }
+}
+
+function formatCountdown(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+function handleBack() {
+  authStore.awaitingOTP = false
+  authStore.error = null
+  otpCode.value = ''
+  stopCountdown()
 }
 </script>
 
@@ -272,10 +393,6 @@ const handleLogin = async () => {
   box-shadow: var(--shadow-subtle);
 }
 
-.error-icon {
-  font-size: 16px;
-}
-
 @keyframes shake {
   0%,
   100% {
@@ -387,6 +504,85 @@ const handleLogin = async () => {
   color: var(--color-accent-orange);
   background: rgba(255, 153, 0, 0.1);
   transform: translateX(-2px);
+}
+
+/* OTP Specific Styles */
+.otp-info {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.otp-info p {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 15px;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+.otp-info strong {
+  color: var(--color-accent-orange);
+  font-weight: 600;
+}
+
+.countdown {
+  display: inline-block;
+  padding: 8px 16px;
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.countdown.expired {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.otp-input {
+  text-align: center;
+  font-size: 24px;
+  letter-spacing: 8px;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+}
+
+.otp-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+  justify-content: center;
+}
+
+.btn-secondary {
+  flex: 1;
+  max-width: 200px;
+  padding: 12px 20px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-accent-orange);
+  color: var(--color-accent-orange);
+  background: rgba(255, 153, 0, 0.1);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Responsive */
