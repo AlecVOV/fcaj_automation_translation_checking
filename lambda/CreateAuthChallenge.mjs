@@ -1,25 +1,28 @@
-import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses'
 
-const ses = new SESClient({ region: "ap-southeast-1" });
+const ses = new SESClient({ region: 'ap-southeast-1' })
+
+// Việt will config later on
+// const ses = new SESClient({ region: 'us-east-1' });
 
 export const handler = async (event) => {
-  console.log('CreateAuthChallenge:', JSON.stringify(event, null, 2));
-  
+  console.log('CreateAuthChallenge:', JSON.stringify(event, null, 2))
+
   if (event.request.challengeName !== 'CUSTOM_CHALLENGE') {
-    return event;
+    return event
   }
 
   // Generate 6-digit OTP
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const email = event.request.userAttributes.email;
+  const otp = Math.floor(100000 + Math.random() * 900000).toString()
+  const email = event.request.userAttributes.email
 
   // Send email via SES directly with beautiful HTML template
   try {
     const params = {
-      Source: "quocviet1452005@gmail.com", // Phải là email đã Verified trong SES
+      Source: 'quocviet1452005@gmail.com', // Phải là email đã Verified trong SES
       Destination: { ToAddresses: [email] },
       Message: {
-        Subject: { Data: "Your FCAJ Admin Login Code" },
+        Subject: { Data: 'Your FCAJ Admin Login Code' },
         Body: {
           Html: {
             Data: `
@@ -113,23 +116,23 @@ export const handler = async (event) => {
   </div>
 </body>
 </html>
-            `
-          }
-        }
-      }
-    };
+            `,
+          },
+        },
+      },
+    }
 
-    await ses.send(new SendEmailCommand(params));
-    console.log(`Email sent successfully to ${email}`);
+    await ses.send(new SendEmailCommand(params))
+    console.log(`Email sent successfully to ${email}`)
   } catch (error) {
-    console.error("Failed to send email via SES:", error);
+    console.error('Failed to send email via SES:', error)
     // Continue auth flow even if email fails (for debugging)
   }
 
   // Store OTP in metadata for VerifyAuthChallengeResponse to validate
-  event.response.privateChallengeParameters = { otp: otp };
-  event.response.challengeMetadata = otp;
-  event.response.publicChallengeParameters = { email: email };
-  
-  return event;
-};
+  event.response.privateChallengeParameters = { otp: otp }
+  event.response.challengeMetadata = otp
+  event.response.publicChallengeParameters = { email: email }
+
+  return event
+}
