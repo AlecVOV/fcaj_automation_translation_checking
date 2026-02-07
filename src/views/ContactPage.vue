@@ -55,7 +55,11 @@
           <div class="contact-icon">📧</div>
           <h2>Get in Touch</h2>
           <p>Have questions or want to collaborate? Feel free to reach out to us!</p>
-          <a href="mailto:contact@fcaj.vn" class="btn-primary">Email Us</a>
+          <a
+            href="mailto:binhcanguyen04@gmail.com,lehoangtrietthong2102004@gmail.com,lhtthong.forwork@gmail.com,lhtthong.forwork@outlook.com,quocviet1452005@gmail.com"
+            class="btn-primary"
+            >Email Us</a
+          >
         </div>
       </div>
     </section>
