@@ -2,7 +2,11 @@
   <div class="loading-screen">
     <div class="aws-glow"></div>
     <div class="content">
-      <img src="/LOGO_AWS_FACJ.png" alt="FCAJ AWS Logo" class="logo" />
+      <img
+        src="https://res.cloudinary.com/dtv3ad4kv/image/upload/v1770455220/LOGO_AWS_FACJ_pzsudb.png"
+        alt="FCAJ AWS Logo"
+        class="logo"
+      />
       <p class="message">Initializing AWS translation workspace...</p>
       <div class="loading-track">
         <div class="loading-fill"></div>
@@ -34,8 +38,15 @@
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(0.95); opacity: 0.8; }
-  50% { transform: scale(1.05); opacity: 1; }
+  0%,
+  100% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
 }
 .content {
   position: relative;
@@ -43,7 +54,7 @@
   text-align: center;
   padding: var(--spacing-xl);
   border-radius: var(--radius-lg);
-  background: var(--color-primary-navy, #232F3E);
+  background: var(--color-primary-navy, #232f3e);
   box-shadow: var(--shadow-card);
   width: min(640px, 120vw);
 }
@@ -80,12 +91,20 @@
   animation: fill-bar 2s ease forwards;
 }
 @keyframes fill-bar {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 @keyframes drive {
-  from { left: 5%; }
-  to { left: 95%; }
+  from {
+    left: 5%;
+  }
+  to {
+    left: 95%;
+  }
 }
 .timer {
   display: block;

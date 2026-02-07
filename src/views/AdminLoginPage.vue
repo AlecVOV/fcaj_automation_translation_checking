@@ -9,7 +9,11 @@
         <div class="login-card">
           <div class="logo-section">
             <div class="logo-container">
-              <img src="/LOGO_AWS_FACJ.png" alt="FCAJ Logo" class="logo" />
+              <img
+                src="https://res.cloudinary.com/dtv3ad4kv/image/upload/v1770455220/LOGO_AWS_FACJ_pzsudb.png"
+                alt="FCAJ Logo"
+                class="logo"
+              />
             </div>
             <h1>Admin Login</h1>
             <p v-if="!authStore.awaitingOTP">Enter your email to receive a verification code</p>
@@ -49,15 +53,13 @@
           <form v-else @submit.prevent="handleVerifyOTP" class="login-form">
             <div class="otp-info">
               <p>
-                We've sent a 6-digit code to<br>
+                We've sent a 6-digit code to<br />
                 <strong>{{ email }}</strong>
               </p>
               <div v-if="countdown > 0" class="countdown">
                 Code expires in {{ formatCountdown(countdown) }}
               </div>
-              <div v-else class="countdown expired">
-                Code expired
-              </div>
+              <div v-else class="countdown expired">Code expired</div>
             </div>
 
             <div class="form-group">
@@ -81,11 +83,7 @@
               {{ authStore.error }}
             </div>
 
-            <button 
-              type="submit" 
-              class="btn-login" 
-              :disabled="authStore.loading || countdown <= 0"
-            >
+            <button type="submit" class="btn-login" :disabled="authStore.loading || countdown <= 0">
               <span v-if="!authStore.loading">Verify & Login</span>
               <span v-else class="loading-content">
                 <span class="spinner-small"></span>
@@ -94,9 +92,9 @@
             </button>
 
             <div class="otp-actions">
-              <button 
-                type="button" 
-                @click="handleResendOTP" 
+              <button
+                type="button"
+                @click="handleResendOTP"
                 class="btn-secondary"
                 :disabled="authStore.loading || countdown > 240"
               >
@@ -104,9 +102,9 @@
                 <span v-if="countdown > 240">({{ Math.ceil((countdown - 240) / 60) }}m)</span>
               </button>
 
-              <button 
-                type="button" 
-                @click="handleBack" 
+              <button
+                type="button"
+                @click="handleBack"
                 class="btn-secondary"
                 :disabled="authStore.loading"
               >

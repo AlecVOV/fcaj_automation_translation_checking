@@ -79,7 +79,7 @@ const teamMembers: TeamMember[] = [
   {
     id: 1,
     name: 'Le Hoang Triet Thong',
-    image: 'chilonthon.JPG',
+    image: 'https://res.cloudinary.com/dtv3ad4kv/image/upload/v1770455219/chilonthon_ebjymm.jpg',
     school: 'Swinburne University of Technology (Swinburne Vietnam)',
     major: 'Artificial Intelligence',
     role: 'AI/ML Ambassador',
@@ -91,7 +91,7 @@ const teamMembers: TeamMember[] = [
   {
     id: 2,
     name: 'Nguyen Binh Ca',
-    image: 'nguyenbinhca.JPG',
+    image: 'https://res.cloudinary.com/dtv3ad4kv/image/upload/v1770455219/nguyenbinhca_qlcctf.jpg',
     school: 'Swinburne University of Technology (Swinburne Vietnam)',
     major: 'Software Development',
     role: 'Cloud Engineer Ambassador',
@@ -103,7 +103,8 @@ const teamMembers: TeamMember[] = [
   {
     id: 3,
     name: 'Phan Nguyen Quoc Viet',
-    image: 'phannguyenquocviet.jpg',
+    image:
+      'https://res.cloudinary.com/dtv3ad4kv/image/upload/v1770455219/phannguyenquocviet_q8xad6.jpg',
     school: 'Swinburne University of Technology (Swinburne Vietnam)',
     major: 'Software Development',
     role: 'Web Security Engineer',
@@ -115,7 +116,8 @@ const teamMembers: TeamMember[] = [
   {
     id: 4,
     name: 'Nguyen Ha Thuy Trang',
-    image: 'nguyenhathuytrang.JPG',
+    image:
+      'https://res.cloudinary.com/dtv3ad4kv/image/upload/v1770455219/nguyenhathuytrang_wneuhx.jpg',
     school: 'Swinburne University of Technology (Swinburne Vietnam)',
     major: 'Software Development',
     role: 'Backend Developer',
@@ -127,7 +129,8 @@ const teamMembers: TeamMember[] = [
   {
     id: 5,
     name: 'Phan Truong Thinh',
-    image: 'phantruongthinh.JPG',
+    image:
+      'https://res.cloudinary.com/dtv3ad4kv/image/upload/v1770455221/phantruongthinh_uupwat.jpg',
     school: 'Swinburne University of Technology (Swinburne Vietnam)',
     major: 'Software Development',
     role: 'Analytics Engineer',
@@ -139,7 +142,7 @@ const teamMembers: TeamMember[] = [
   {
     id: 6,
     name: 'Chung Dung Toan',
-    image: 'chungdungtoan.jpg',
+    image: 'https://res.cloudinary.com/dtv3ad4kv/image/upload/v1770455218/chungdungtoan_ubujil.jpg',
     school: 'Swinburne University of Technology (Swinburne Vietnam)',
     major: 'Software Development',
     role: 'Analytics Engineer',
