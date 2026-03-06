@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTranslationStore } from '@/stores/translationStore'
+import * as XLSX from 'xlsx'
 
 const router = useRouter()
 const translationStore = useTranslationStore()
@@ -10,11 +11,104 @@ const selectedFile = ref<File | null>(null)
 const isDragging = ref(false)
 const isUploading = ref(false)
 const uploadProgress = ref(0)
+const validationError = ref<string | null>(null)
+
+// Checks if a string is a valid http/https URL
+const isValidUrl = (str: string): boolean => {
+  try {
+    const url = new URL(str.trim())
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+// Validates file content: exactly 2 columns, all cells are valid URLs
+const validateFileContent = (file: File): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer)
+        const workbook = XLSX.read(data, { type: 'array' })
+        const sheetName = workbook.SheetNames[0]
+
+        if (!sheetName) {
+          resolve('The file has no sheets.')
+          return
+        }
+        const sheet = workbook.Sheets[sheetName]
+        if (!sheet) {
+          resolve('Could not read the sheet.')
+          return
+        }
+        // header: 1 → returns array of arrays
+        const rows: string[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
+
+        // Filter out completely empty rows
+        const dataRows = rows.filter((row) => row.some((cell) => String(cell).trim() !== ''))
+
+        if (dataRows.length === 0) {
+          resolve('The file is empty.')
+          return
+        }
+
+        // Validate header row has required column names
+        const headerRow = dataRows[0]?.map((c) => String(c).trim().toLowerCase()) ?? []
+        if (!headerRow.includes('aws_blog_url') || !headerRow.includes('google_doc_url')) {
+          resolve(
+            'File must have columns named "aws_blog_url" and "google_doc_url" in the first row.',
+          )
+          return
+        }
+
+        // Skip the header row (row 1)
+        const contentRows = dataRows.slice(1)
+
+        if (contentRows.length === 0) {
+          resolve('The file has no data rows (only a header).')
+          return
+        }
+
+        let rowIndex = 1 // row 1 is the header; data starts at row 2
+        for (const rawRow of contentRows) {
+          rowIndex++
+          const row = rawRow.map((c) => String(c).trim())
+
+          // Strip empty trailing columns
+          const nonEmpty = row.filter((c) => c !== '')
+          if (nonEmpty.length !== 2) {
+            resolve(`Row ${rowIndex} must have exactly 2 columns (found ${nonEmpty.length}).`)
+            return
+          }
+
+          const [col1, col2] = nonEmpty as [string, string]
+          if (!isValidUrl(col1)) {
+            resolve(`Row ${rowIndex}, Column 1: "${col1}" is not a valid URL.`)
+            return
+          }
+          if (!isValidUrl(col2)) {
+            resolve(`Row ${rowIndex}, Column 2: "${col2}" is not a valid URL.`)
+            return
+          }
+        }
+
+        resolve(null) // all good
+      } catch {
+        resolve('Could not read the file. Please check the format.')
+      }
+    }
+
+    reader.readAsArrayBuffer(file)
+  })
+}
 
 const handleFileSelect = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files[0]) {
     selectedFile.value = target.files[0]
+    validationError.value = null
   }
 }
 
@@ -22,6 +116,7 @@ const handleDrop = (event: DragEvent) => {
   isDragging.value = false
   if (event.dataTransfer?.files && event.dataTransfer.files[0]) {
     selectedFile.value = event.dataTransfer.files[0]
+    validationError.value = null
   }
 }
 
@@ -37,35 +132,41 @@ const handleDragLeave = () => {
 const uploadFile = async () => {
   if (!selectedFile.value) return
 
+  // 1) Extension check
   const fileExt = selectedFile.value.name.split('.').pop()?.toLowerCase()
   if (!['csv', 'xlsx', 'xls'].includes(fileExt || '')) {
-    alert('Please upload a CSV or XLSX file')
+    validationError.value = 'Please upload a CSV or XLSX file.'
     return
   }
 
+  // 2) Content check
+  const contentError = await validateFileContent(selectedFile.value)
+  if (contentError) {
+    validationError.value = contentError
+    return
+  }
+
+  validationError.value = null
   isUploading.value = true
   uploadProgress.value = 0
 
   try {
-    // Simulate upload progress
     const progressInterval = setInterval(() => {
       uploadProgress.value += 10
-      if (uploadProgress.value >= 90) {
-        clearInterval(progressInterval)
-      }
+      if (uploadProgress.value >= 90) clearInterval(progressInterval)
     }, 200)
 
     await translationStore.uploadFile(selectedFile.value)
-    
+
     clearInterval(progressInterval)
     uploadProgress.value = 100
 
     setTimeout(() => {
-      router.push('/dashboard')
+      router.push('/admin/dashboard')
     }, 500)
   } catch (error) {
     console.error('Upload failed:', error)
-    alert('Upload failed. Please try again.')
+    validationError.value = 'Upload failed. Please try again.'
     uploadProgress.value = 0
   } finally {
     isUploading.value = false
@@ -75,6 +176,7 @@ const uploadFile = async () => {
 const clearFile = () => {
   selectedFile.value = null
   uploadProgress.value = 0
+  validationError.value = null
 }
 </script>
 
@@ -136,7 +238,7 @@ const clearFile = () => {
             </div>
           </div>
 
-          <div class="upload-actions">
+          <!-- <div class="upload-actions">
             <button
               class="btn-primary"
               :disabled="!selectedFile || isUploading"
@@ -145,6 +247,20 @@ const clearFile = () => {
               <span v-if="!isUploading">Upload & Process</span>
               <span v-else>Processing...</span>
             </button>
+          </div> -->
+
+          <div class="upload-actions">
+            <!-- Validation error message -->
+            <button
+              class="btn-primary"
+              :disabled="!selectedFile || isUploading"
+              @click="uploadFile"
+            >
+              <span v-if="!isUploading">Upload & Process</span>
+              <span v-else>Processing...</span>
+            </button>
+
+            <p v-if="validationError" class="error-message">{{ validationError }}</p>
           </div>
         </div>
 
@@ -152,8 +268,12 @@ const clearFile = () => {
         <div class="instructions">
           <h3>File Format Guidelines</h3>
           <ul>
-            <li>Column 1: URL of the original post</li>
-            <li>Column 2: URL of the translated post</li>
+            <li>
+              Row 1 must be a header with columns: <strong>aws_blog_url</strong> and
+              <strong>google_doc_url</strong>
+            </li>
+            <li>Column <strong>aws_blog_url</strong>: URL of the original AWS post</li>
+            <li>Column <strong>google_doc_url</strong>: URL of the translated Google Doc</li>
           </ul>
         </div>
       </div>
@@ -196,16 +316,16 @@ const clearFile = () => {
   width: 80%;
   height: 80%;
   background: radial-gradient(
-    rgba(255, 180, 180, 0.6),  /* Bolder pink center */
-    rgba(180, 210, 255, 0.6),  /* Bolder light blue */
-    rgba(255, 220, 180, 0.6),  /* Bolder peach */
-    rgba(180, 255, 220, 0.6),  /* Bolder mint */
-    rgba(220, 180, 255, 0.6),  /* Bolder lavender */
-    rgba(255, 255, 180, 0.6),  /* Bolder light yellow */
-    rgba(180, 255, 255, 0.6),  /* Bolder cyan */
-    rgba(255, 180, 220, 0.6),  /* Bolder rose */
-    rgba(220, 255, 180, 0.6),  /* Bolder light green */
-    rgba(255, 180, 180, 0.6)   /* Back to bolder pink */
+    rgba(255, 180, 180, 0.6),
+    /* Bolder pink center */ rgba(180, 210, 255, 0.6),
+    /* Bolder light blue */ rgba(255, 220, 180, 0.6),
+    /* Bolder peach */ rgba(180, 255, 220, 0.6),
+    /* Bolder mint */ rgba(220, 180, 255, 0.6),
+    /* Bolder lavender */ rgba(255, 255, 180, 0.6),
+    /* Bolder light yellow */ rgba(180, 255, 255, 0.6),
+    /* Bolder cyan */ rgba(255, 180, 220, 0.6),
+    /* Bolder rose */ rgba(220, 255, 180, 0.6),
+    /* Bolder light green */ rgba(255, 180, 180, 0.6) /* Back to bolder pink */
   );
   background-size: 400% 400%;
   animation: gradient-shift 10s ease infinite;
@@ -407,7 +527,16 @@ const clearFile = () => {
 .upload-actions {
   margin-top: var(--spacing-lg);
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.error-message {
+  color: var(--color-error-heavy);
+  font-size: 14px;
+  margin-bottom: var(--spacing-sm);
+  text-align: center;
 }
 
 .btn-primary {

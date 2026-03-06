@@ -103,7 +103,7 @@ const progressPercentage = computed(() => {
 
       <div v-if="post" class="detail-content fade-in">
         <!-- Header -->
-        <div class="post-header">
+        <!-- <div class="post-header">
           <div>
             <h1>{{ post.englishTitle }}</h1>
             <h2 class="vietnamese-title">{{ post.vietnameseTitle }}</h2>
@@ -111,10 +111,10 @@ const progressPercentage = computed(() => {
           <span :class="['badge-large', `severity-${post.severity}`]">
             {{ post.severity.toUpperCase() }}
           </span>
-        </div>
+        </div> -->
 
         <!-- Summary Stats -->
-        <div class="summary-stats">
+        <!-- <div class="summary-stats">
           <div class="stat-item">
             <span class="stat-label">Total Errors:</span>
             <span class="stat-value">{{ post.errorCount }}</span>
@@ -128,6 +128,36 @@ const progressPercentage = computed(() => {
             <span class="stat-value" :style="{ color: getSeverityColor(post.severity) }">
               {{ post.severity }}
             </span>
+          </div>
+        </div> -->
+
+        <!-- Header -->
+        <div class="post-header">
+          <div>
+            <h1>
+              Article <code>{{ post.article_id }}</code>
+            </h1>
+          </div>
+          <span class="badge-large"> {{ post.total_errors }} Total Errors </span>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats">
+          <div class="stat-item">
+            <span class="stat-label">Total Errors:</span>
+            <span class="stat-value">{{ post.total_errors }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Critical:</span>
+            <span class="stat-value" style="color: #d13212">{{ post.critical_errors }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Major:</span>
+            <span class="stat-value" style="color: #ff9900">{{ post.major_errors }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Minor:</span>
+            <span class="stat-value" style="color: #1e8900">{{ post.minor_errors }}</span>
           </div>
         </div>
 

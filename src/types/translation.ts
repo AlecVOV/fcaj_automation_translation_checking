@@ -37,3 +37,16 @@ export interface DashboardStats {
   lightErrors: number
   averageScore: number
 }
+
+export interface Article {
+  article_id: string
+  total_errors: number
+  critical_errors: number
+  major_errors: number
+  minor_errors: number
+}
+
+export interface ArticlesResponse {
+  total_articles: number
+  articles: Article[]
+}

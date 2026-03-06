@@ -1,8 +1,3 @@
-/**
- * AWS Amplify Configuration
- * Configure Cognito User Pool for passwordless authentication
- */
-
 import type { ResourcesConfig } from 'aws-amplify'
 
 export const awsConfig: ResourcesConfig = {

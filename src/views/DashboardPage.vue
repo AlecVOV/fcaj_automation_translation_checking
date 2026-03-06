@@ -27,20 +27,20 @@ function viewDetails(postId: string) {
       <!-- Statistics Summary -->
       <div class="stats-grid">
         <div class="stat-card">
-          <h3>Total Posts</h3>
+          <h3>Total Articles</h3>
           <p class="stat-number">{{ dashboardStore.statistics.totalPosts }}</p>
         </div>
         <div class="stat-card heavy">
-          <h3>Heavy Errors</h3>
-          <p class="stat-number">{{ dashboardStore.statistics.heavyErrors }}</p>
+          <h3>Critical Errors</h3>
+          <p class="stat-number">{{ dashboardStore.statistics.criticalErrors }}</p>
         </div>
         <div class="stat-card medium">
-          <h3>Medium Errors</h3>
-          <p class="stat-number">{{ dashboardStore.statistics.mediumErrors }}</p>
+          <h3>Major Errors</h3>
+          <p class="stat-number">{{ dashboardStore.statistics.majorErrors }}</p>
         </div>
         <div class="stat-card light">
-          <h3>Light Errors</h3>
-          <p class="stat-number">{{ dashboardStore.statistics.lightErrors }}</p>
+          <h3>Minor Errors</h3>
+          <p class="stat-number">{{ dashboardStore.statistics.minorErrors }}</p>
         </div>
       </div>
 
@@ -56,23 +56,22 @@ function viewDetails(postId: string) {
 
       <!-- Posts List -->
       <div v-else class="posts-grid">
-        <div v-for="post in dashboardStore.posts" :key="post.id" class="post-card">
+        <div v-for="post in dashboardStore.posts" :key="post.article_id" class="post-card">
           <div class="post-header">
-            <h2>{{ post.englishTitle }}</h2>
-            <span :class="['badge', getSeverityClass(post.severity)]">
-              {{ post.severity }}
-            </span>
+            <h2>
+              Article <code>{{ post.article_id }}</code>
+            </h2>
+            <span class="badge">{{ post.total_errors }} errors</span>
           </div>
-
-          <h3 class="vietnamese-title">{{ post.vietnameseTitle }}</h3>
-
           <div class="post-meta">
-            <span class="error-count">{{ post.errorCount }} errors</span>
-            <span class="date">{{ new Date(post.createdAt).toLocaleDateString() }}</span>
+            <span class="critical">Critical: {{ post.critical_errors }}</span>
+            <span class="major">Major: {{ post.major_errors }}</span>
+            <span class="minor">Minor: {{ post.minor_errors }}</span>
           </div>
-
           <div class="post-actions">
-            <button @click="viewDetails(post.id)" class="btn-details">View Details →</button>
+            <button @click="viewDetails(post.article_id)" class="btn-details">
+              View Details →
+            </button>
           </div>
         </div>
       </div>

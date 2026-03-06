@@ -1,88 +1,50 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Translation, DashboardStats } from '@/types/translation'
-import { mockPosts } from '@/data/mockPosts'
-import { mockErrors } from '@/data/mockErrors'
-
+import type { Article } from '@/types/translation'
+import { useTranslationStore } from '@/stores/translationStore'
 
 export const useDashboardStore = defineStore('dashboard', () => {
-  const posts = ref<Translation[]>([])
+  const posts = ref<Article[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  const statistics = computed<DashboardStats>(() => {
+  const statistics = computed(() => {
     const total = posts.value.length
-    const heavy = posts.value.filter(p => p.severity === 'heavy').length
-    const medium = posts.value.filter(p => p.severity === 'medium').length
-    const light = posts.value.filter(p => p.severity === 'light').length
-    
-    return {
-      totalPosts: total,
-      heavyErrors: heavy,
-      mediumErrors: medium,
-      lightErrors: light,
-      averageScore: 0
-    }
+    const critical = posts.value.reduce((sum, p) => sum + p.critical_errors, 0)
+    const major = posts.value.reduce((sum, p) => sum + p.major_errors, 0)
+    const minor = posts.value.reduce((sum, p) => sum + p.minor_errors, 0)
+    return { totalPosts: total, criticalErrors: critical, majorErrors: major, minorErrors: minor }
   })
 
   async function fetchPosts() {
     isLoading.value = true
     error.value = null
-    
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // Use mock data instead of API call
-      posts.value = mockPosts
+      const translationStore = useTranslationStore()
+      await translationStore.fetchTranslations()
+      posts.value = translationStore.articles // ← was .translations
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to fetch posts'
-      console.error('Failed to fetch posts:', e)
     } finally {
       isLoading.value = false
     }
   }
 
   async function getPostById(id: string) {
-    const post = posts.value.find(p => p.id === id)
-    if (post) return post
-
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    // Find in mock data
-    const mockPost = mockPosts.find(p => p.id === id)
-    if (!mockPost) throw new Error('Post not found')
-    
-    return mockPost
+    const post = posts.value.find((p) => p.article_id === id) // ← was p.id
+    if (!post) throw new Error('Post not found')
+    return post
   }
 
-  async function getPostErrors(postId: string) {
+  async function getPostErrors(articleId: string) {
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
-      // Get errors from mock data based on postId
-      const postErrors = mockErrors[postId]
-      if (!postErrors) {
-        // Return empty array if no errors found for this post
-        return []
-      }
-      
-      return postErrors
+      const translationStore = useTranslationStore()
+      return await translationStore.fetchErrors(articleId)
     } catch (e) {
       console.error('Error fetching post errors:', e)
       throw new Error('Failed to fetch post errors')
     }
   }
 
-  return {
-    posts,
-    isLoading,
-    error,
-    statistics,
-    fetchPosts,
-    getPostById,
-    getPostErrors
-  }
+  return { posts, isLoading, error, statistics, fetchPosts, getPostById, getPostErrors }
 })

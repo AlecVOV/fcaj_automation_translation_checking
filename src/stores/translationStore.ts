@@ -1,24 +1,55 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { Translation } from '@/types/translation'
+import { fetchAuthSession } from 'aws-amplify/auth'
+import type { Article } from '@/types/translation'
+
+const BASE_URL = import.meta.env.VITE_API_GATEWAY_URL
+
+// Helper: gets the current user's JWT token from Cognito
+async function getAuthToken(): Promise<string> {
+  const session = await fetchAuthSession()
+  const token = session.tokens?.idToken?.toString()
+  if (!token) throw new Error('Not authenticated')
+  return token
+}
 
 export const useTranslationStore = defineStore('translation', () => {
-  const translations = ref<Translation[]>([])
-  const currentTranslation = ref<Translation | null>(null)
+  const articles = ref<Article[]>([]) // ← renamed from translations
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
+  // Get all data
   async function fetchTranslations() {
     isLoading.value = true
     error.value = null
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/translations')
-      if (!response.ok) throw new Error('Failed to fetch translations')
-      translations.value = await response.json()
+      // No Authorization header — avoids CORS preflight for this public endpoint
+      const response = await fetch(`${BASE_URL}/articles`)
+      if (!response.ok) {
+        const body = await response.text()
+        console.error('fetchTranslations error:', body)
+        throw new Error('Failed to fetch articles')
+      }
+      const data = await response.json()
+      articles.value = data.articles ?? []
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'An error occurred'
-      console.error('Failed to fetch translations:', e)
+      console.error('fetchTranslations failed:', e)
+      throw e
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function fetchErrors(articleId: string) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await fetch(`${BASE_URL}/errors/${articleId}`)
+      if (!response.ok) throw new Error('Failed to fetch errors')
+      return await response.json()
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'An error occurred'
     } finally {
       isLoading.value = false
     }
@@ -27,38 +58,31 @@ export const useTranslationStore = defineStore('translation', () => {
   async function uploadFile(file: File) {
     isLoading.value = true
     error.value = null
-    const formData = new FormData()
-    formData.append('file', file)
-
     try {
-      const response = await fetch('/api/upload', {
+      const token = await getAuthToken()
+      const response = await fetch(`${BASE_URL}/upload`, {
         method: 'POST',
-        body: formData
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': file.type || 'application/octet-stream',
+        },
+        body: file,
       })
-      if (!response.ok) throw new Error('Upload failed')
+      if (!response.ok) {
+        const body = await response.text()
+        console.error('Upload error response:', body)
+        throw new Error('Upload failed')
+      }
       const result = await response.json()
-      await fetchTranslations() // Refresh list
+      await fetchTranslations()
       return result
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Upload failed'
-      console.error('Upload failed:', e)
       throw e
     } finally {
       isLoading.value = false
     }
   }
 
-  function setCurrentTranslation(translation: Translation) {
-    currentTranslation.value = translation
-  }
-
-  return {
-    translations,
-    currentTranslation,
-    isLoading,
-    error,
-    fetchTranslations,
-    uploadFile,
-    setCurrentTranslation
-  }
+  return { articles, isLoading, error, fetchTranslations, fetchErrors, uploadFile }
 })
