@@ -2,52 +2,66 @@
 import { ref, computed } from 'vue'
 
 const props = defineProps<{
-  originalMarkdown: string
-  errors: any[]
-  acceptedErrorIndices: number[]
+  originalMarkdown: string // Nội dung bài blog gốc từ S3
+  errors: any[]           // Danh sách lỗi đã được map keys (translated, suggestion)
+  acceptedErrorIndices: number[] // Mảng chứa index của các lỗi đã được chấp nhận
 }>()
 
 const copySuccess = ref(false)
 
-// Apply accepted corrections to the markdown
+/**
+ * Logic: Tự động tạo ra nội dung Markdown mới đã qua chỉnh sửa.
+ * Mỗi khi props.acceptedErrorIndices thay đổi, hàm này sẽ chạy lại.
+ */
 const correctedMarkdown = computed(() => {
   let result = props.originalMarkdown
 
-  // Get accepted errors and sort by position (reverse order to avoid index shifting)
+  if (!result) return ''
+
+  // Lấy danh sách các lỗi đã được người dùng nhấn "Accept"
   const acceptedErrors = props.acceptedErrorIndices
-    .map((index) => ({ ...props.errors[index], originalIndex: index }))
+    .map((index) => props.errors[index])
     .filter(Boolean)
 
-  // Apply each correction by replacing the translated text with suggestion
+  // Duyệt qua từng lỗi và thực hiện thay thế (Replace)
   for (const error of acceptedErrors) {
     if (error.translated && error.suggestion) {
-      // Replace all occurrences of the incorrect translation with the suggestion
-      result = result.replace(error.translated, error.suggestion)
+      /**
+       * Mẹo: Dùng split/join để thay thế tất cả các cụm từ khớp hoàn toàn trong văn bản.
+       * Điều này giúp sửa lỗi triệt để nếu cụm từ đó xuất hiện nhiều lần.
+       */
+      result = result.split(error.translated).join(error.suggestion)
     }
   }
 
   return result
 })
 
-// Generate highlighted HTML for preview
+/**
+ * Logic: Tạo bản xem trước (Preview) có tô màu những chỗ đã sửa.
+ */
 const highlightedPreview = computed(() => {
   let html = correctedMarkdown.value
 
-  // Escape HTML
+  if (!html) return ''
+
+  // 1. Escape các ký tự HTML để tránh lỗi render
   html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
-  // Highlight corrected parts (suggestions that were applied)
+  // 2. Tô màu (Highlight) những đoạn đã được sửa đổi
   for (const index of props.acceptedErrorIndices) {
     const error = props.errors[index]
     if (error && error.suggestion) {
+      // Escape các ký tự đặc biệt trong suggestion để dùng được trong Regex
       const escapedSuggestion = error.suggestion
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape regex special chars
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
       const regex = new RegExp(escapedSuggestion, 'g')
-      html = html.replace(regex, `<mark class="corrected">${escapedSuggestion}</mark>`)
+      // Bao bọc đoạn đã sửa bằng thẻ <mark>
+      html = html.replace(regex, `<mark class="corrected">${error.suggestion}</mark>`)
     }
   }
 
@@ -57,35 +71,24 @@ const highlightedPreview = computed(() => {
 const correctionCount = computed(() => props.acceptedErrorIndices.length)
 const totalErrors = computed(() => props.errors.length)
 
+// Hàm copy nội dung đã sửa vào bộ nhớ đệm
 const copyToClipboard = async () => {
   try {
     await navigator.clipboard.writeText(correctedMarkdown.value)
     copySuccess.value = true
-    setTimeout(() => {
-      copySuccess.value = false
-    }, 2000)
+    setTimeout(() => (copySuccess.value = false), 2000)
   } catch (err) {
-    console.error('Failed to copy:', err)
-    // Fallback for older browsers
-    const textArea = document.createElement('textarea')
-    textArea.value = correctedMarkdown.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
-    copySuccess.value = true
-    setTimeout(() => {
-      copySuccess.value = false
-    }, 2000)
+    console.error('Không thể copy:', err)
   }
 }
 
+// Hàm tải file .md đã sửa về máy
 const downloadMarkdown = () => {
   const blob = new Blob([correctedMarkdown.value], { type: 'text/markdown' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'corrected-translation.md'
+  a.download = `corrected-blog-${new Date().getTime()}.md`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
@@ -134,8 +137,7 @@ const downloadMarkdown = () => {
 
     <div class="usage-hint">
       <p>
-        💡 <strong>Tip:</strong> Click "Accept This Translation" on error cards to apply
-        corrections. The preview will update automatically.
+        💡 <strong>Mẹo:</strong> Nhấn "Accept This Translation" ở các thẻ lỗi bên trái để áp dụng sửa đổi vào bản xem trước này.
       </p>
     </div>
   </div>
@@ -156,19 +158,6 @@ const downloadMarkdown = () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.blog-header h3 {
-  margin: 0;
-  color: #232f3e;
-  font-size: 1.3rem;
-}
-
-.correction-stats {
-  display: flex;
-  gap: 12px;
 }
 
 .stat-badge {
@@ -177,7 +166,7 @@ const downloadMarkdown = () => {
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .blog-preview {
@@ -188,28 +177,11 @@ const downloadMarkdown = () => {
 
 .preview-toolbar {
   background: #f5f5f5;
-  padding: 12px 16px;
+  padding: 10px 16px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #e0e0e0;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.preview-label {
-  font-weight: 500;
-  color: #555;
-}
-
-.preview-legend {
-  display: flex;
-  gap: 16px;
-}
-
-.legend-item {
   font-size: 0.85rem;
-  color: #666;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .corrected-sample {
@@ -217,13 +189,12 @@ const downloadMarkdown = () => {
   color: #ffffff;
   padding: 2px 6px;
   border-radius: 3px;
-  font-size: 0.8rem;
 }
 
 .preview-content {
-  max-height: 500px;
+  max-height: 600px;
   overflow-y: auto;
-  background: #1e1e1e;
+  background: #1e1e1e; /* Màu nền dark mode cho code */
 }
 
 .preview-content pre {
@@ -232,7 +203,7 @@ const downloadMarkdown = () => {
 }
 
 .preview-content code {
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: 'Consolas', 'Monaco', monospace;
   font-size: 0.9rem;
   line-height: 1.6;
   color: #d4d4d4;
@@ -240,9 +211,10 @@ const downloadMarkdown = () => {
   word-break: break-word;
 }
 
-.preview-content :deep(.corrected) {
-  background: #4caf50;
-  color: #ffffff;
+/* Style cho thẻ mark được render qua v-html */
+:deep(.corrected) {
+  background: #4caf50 !important;
+  color: #ffffff !important;
   padding: 2px 4px;
   border-radius: 3px;
 }
@@ -255,97 +227,24 @@ const downloadMarkdown = () => {
 }
 
 .action-btn {
-  padding: 12px 24px;
+  padding: 12px 20px;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s ease;
   border: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  transition: all 0.2s;
 }
 
-.copy-btn {
-  background: #ff9900;
-  color: #232f3e;
-}
-
-.copy-btn:hover {
-  background: #ec8f00;
-  transform: translateY(-2px);
-}
-
-.copy-btn.success {
-  background: #4caf50;
-  color: white;
-}
-
-.download-btn {
-  background: #232f3e;
-  color: white;
-}
-
-.download-btn:hover {
-  background: #37475a;
-  transform: translateY(-2px);
-}
+.copy-btn { background: #ff9900; color: #232f3e; }
+.copy-btn.success { background: #4caf50; color: white; }
+.download-btn { background: #232f3e; color: white; }
 
 .usage-hint {
   margin-top: 16px;
-  padding: 12px 16px;
+  padding: 12px;
   background: #fff8e1;
   border-radius: 6px;
   border-left: 4px solid #ff9900;
-}
-
-.usage-hint p {
-  margin: 0;
-  font-size: 0.9rem;
-  color: #5d4e37;
-}
-
-/* Scrollbar Styling */
-.preview-content::-webkit-scrollbar {
-  width: 8px;
-}
-
-.preview-content::-webkit-scrollbar-track {
-  background: #2d2d2d;
-}
-
-.preview-content::-webkit-scrollbar-thumb {
-  background: #555;
-  border-radius: 4px;
-}
-
-.preview-content::-webkit-scrollbar-thumb:hover {
-  background: #666;
-}
-
-@media (max-width: 768px) {
-  .corrected-blog-container {
-    position: static;
-  }
-
-  .blog-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .blog-actions {
-    flex-direction: column;
-  }
-
-  .action-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .preview-toolbar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  font-size: 0.85rem;
 }
 </style>
