@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
+interface PreviewError {
+  translated?: string
+  suggestion?: string
+}
+
 const props = defineProps<{
   originalMarkdown: string // Nội dung bài blog gốc từ S3
-  errors: any[]           // Danh sách lỗi đã được map keys (translated, suggestion)
+  errors: PreviewError[] // Danh sách lỗi đã được map keys (translated, suggestion)
   acceptedErrorIndices: number[] // Mảng chứa index của các lỗi đã được chấp nhận
 }>()
 
@@ -21,7 +26,7 @@ const correctedMarkdown = computed(() => {
   // Lấy danh sách các lỗi đã được người dùng nhấn "Accept"
   const acceptedErrors = props.acceptedErrorIndices
     .map((index) => props.errors[index])
-    .filter(Boolean)
+    .filter((error): error is PreviewError => Boolean(error))
 
   // Duyệt qua từng lỗi và thực hiện thay thế (Replace)
   for (const error of acceptedErrors) {
@@ -99,7 +104,10 @@ const downloadMarkdown = () => {
 <template>
   <div class="corrected-blog-container">
     <div class="blog-header">
-      <h3>📝 Corrected Translation Preview</h3>
+      <div>
+        <span class="panel-kicker">Live Preview</span>
+        <h3>Corrected Translation Preview</h3>
+      </div>
       <div class="correction-stats">
         <span class="stat-badge">
           ✓ {{ correctionCount }}/{{ totalErrors }} corrections applied
@@ -128,16 +136,17 @@ const downloadMarkdown = () => {
         :class="{ success: copySuccess }"
         @click="copyToClipboard"
       >
-        <span v-if="copySuccess">✓ Copied!</span>
-        <span v-else>📋 Copy Markdown</span>
+        <span v-if="copySuccess">Copied</span>
+        <span v-else>Copy markdown</span>
       </button>
 
-      <button class="action-btn download-btn" @click="downloadMarkdown">⬇️ Download .md</button>
+      <button class="action-btn download-btn" @click="downloadMarkdown">Download .md</button>
     </div>
 
     <div class="usage-hint">
       <p>
-        💡 <strong>Mẹo:</strong> Nhấn "Accept This Translation" ở các thẻ lỗi bên trái để áp dụng sửa đổi vào bản xem trước này.
+        <strong>Tip:</strong> Accept suggestions from the review list to update this preview
+        instantly.
       </p>
     </div>
   </div>
@@ -145,106 +154,213 @@ const downloadMarkdown = () => {
 
 <style scoped>
 .corrected-blog-container {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(31, 47, 68, 0.08);
+  border-radius: 24px;
+  padding: 22px;
+  box-shadow: 0 18px 36px rgba(24, 39, 58, 0.08);
   position: sticky;
-  top: 20px;
+  top: 24px;
 }
 
 .blog-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 16px;
   margin-bottom: 20px;
 }
 
+.blog-header > div {
+  flex: 1 1 50%;
+}
+
+.correction-stats {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.panel-kicker {
+  display: inline-flex;
+  margin-bottom: 8px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(31, 47, 68, 0.08);
+  color: #516071;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.blog-header h3 {
+  margin: 0;
+  color: #172537;
+  font-size: 1.5rem;
+}
+
 .stat-badge {
-  background: #e8f5e9;
-  color: #2e7d32;
-  padding: 6px 14px;
+  background: #eaf6ec;
+  color: #216d41;
+  padding: 8px 14px;
   border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .blog-preview {
   border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  border-radius: 18px;
   overflow: hidden;
 }
 
 .preview-toolbar {
-  background: #f5f5f5;
-  padding: 10px 16px;
+  background: #f5f7fa;
+  padding: 12px 16px;
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   font-size: 0.85rem;
   border-bottom: 1px solid #e0e0e0;
 }
 
+.preview-toolbar > * {
+  flex: 1 1 50%;
+}
+
+.preview-legend {
+  display: flex;
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.preview-label,
+.legend-item {
+  color: #526274;
+}
+
 .corrected-sample {
-  background: #4caf50;
+  background: #2a9154;
   color: #ffffff;
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: 999px;
 }
 
 .preview-content {
-  max-height: 600px;
+  max-height: 720px;
   overflow-y: auto;
-  background: #1e1e1e; /* Màu nền dark mode cho code */
+  background:
+    linear-gradient(180deg, rgba(26, 30, 36, 0.98) 0%, rgba(32, 37, 44, 0.98) 100%),
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.025) 0,
+      rgba(255, 255, 255, 0.025) 28px,
+      rgba(255, 255, 255, 0.01) 28px,
+      rgba(255, 255, 255, 0.01) 56px
+    );
 }
 
 .preview-content pre {
   margin: 0;
-  padding: 20px;
+  padding: 22px;
 }
 
 .preview-content code {
   font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: #d4d4d4;
+  font-size: 0.92rem;
+  line-height: 1.75;
+  color: #e3eaf2;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 /* Style cho thẻ mark được render qua v-html */
 :deep(.corrected) {
-  background: #4caf50 !important;
+  background: #2a9154 !important;
   color: #ffffff !important;
-  padding: 2px 4px;
-  border-radius: 3px;
+  padding: 2px 6px;
+  border-radius: 8px;
 }
 
 .blog-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 20px;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .action-btn {
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-weight: 600;
+  flex: 1 1 calc(50% - 6px);
+  padding: 12px 18px;
+  border-radius: 14px;
+  font-weight: 700;
   cursor: pointer;
   border: none;
-  transition: all 0.2s;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.copy-btn { background: #ff9900; color: #232f3e; }
-.copy-btn.success { background: #4caf50; color: white; }
-.download-btn { background: #232f3e; color: white; }
+.action-btn:hover {
+  transform: translateY(-1px);
+}
+
+.copy-btn {
+  background: #ffb648;
+  color: #1f2f44;
+  box-shadow: 0 12px 24px rgba(255, 182, 72, 0.25);
+}
+
+.copy-btn.success {
+  background: #2a9154;
+  color: white;
+}
+
+.download-btn {
+  background: #1f2f44;
+  color: white;
+  box-shadow: 0 12px 24px rgba(31, 47, 68, 0.22);
+}
 
 .usage-hint {
   margin-top: 16px;
-  padding: 12px;
-  background: #fff8e1;
-  border-radius: 6px;
+  padding: 14px 16px;
+  background: #fff8e9;
+  border-radius: 16px;
   border-left: 4px solid #ff9900;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
+  color: #6c5a33;
+}
+
+.usage-hint p {
+  margin: 0;
+}
+
+@media (max-width: 960px) {
+  .corrected-blog-container {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .corrected-blog-container {
+    border-radius: 20px;
+    padding: 18px;
+  }
+
+  .blog-header,
+  .preview-toolbar {
+    flex-direction: column;
+  }
+
+  .preview-legend {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .action-btn {
+    flex: 1 1 100%;
+  }
 }
 </style>

@@ -1,8 +1,20 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+interface PostError {
+  id?: string
+  type: string
+  severity: 'light' | 'medium' | 'heavy'
+  location: string
+  original: string
+  translated: string
+  suggestion: string
+  explanation?: string
+  aiRecommendation?: string
+}
+
 const props = defineProps<{
-  error: any
+  error: PostError
   index: number
   isAccepted: boolean
 }>()
@@ -11,9 +23,7 @@ const emit = defineEmits<{
   accept: [errorIndex: number]
 }>()
 
-const severityClass = computed(() => {
-  return `severity-${props.error.severity}`
-})
+const severityClass = computed(() => `severity-${props.error.severity}`)
 
 const severityLabel = computed(() => {
   const labels: Record<string, string> = {
@@ -21,6 +31,7 @@ const severityLabel = computed(() => {
     medium: 'Trung bình',
     light: 'Nhẹ',
   }
+
   return labels[props.error.severity] || props.error.severity
 })
 
@@ -45,35 +56,33 @@ const handleAccept = () => {
 
     <div class="error-content">
       <div class="error-row">
-        <span class="label">Original:</span>
+        <span class="label">Original</span>
         <code class="original-text">"{{ error.original }}"</code>
       </div>
 
       <div class="error-row">
-        <span class="label">Current Translation:</span>
+        <span class="label">Current Translation</span>
         <code class="current-text">"{{ error.translated }}"</code>
       </div>
 
       <div class="error-row">
-        <span class="label">Suggested Fix:</span>
+        <span class="label">Suggested Fix</span>
         <code class="suggested-text">"{{ error.suggestion }}"</code>
       </div>
     </div>
 
     <div class="error-explanation">
-      <p>💡 <strong>Explanation:</strong></p>
+      <p><strong>Explanation</strong></p>
       <p>{{ error.explanation }}</p>
     </div>
 
-    <div class="ai-recommendation">
-      <p>🤖 <strong>AI Recommendation:</strong></p>
+    <div v-if="error.aiRecommendation" class="ai-recommendation">
+      <p><strong>AI Recommendation</strong></p>
       <p>{{ error.aiRecommendation }}</p>
     </div>
 
     <div class="error-actions">
-      <button v-if="!isAccepted" class="accept-btn" @click="handleAccept">
-        ✓ Accept This Translation
-      </button>
+      <button v-if="!isAccepted" class="accept-btn" @click="handleAccept">Accept suggestion</button>
       <div v-else class="accepted-badge">✓ Accepted</div>
     </div>
   </div>
@@ -81,18 +90,26 @@ const handleAccept = () => {
 
 <style scoped>
 .error-card {
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 16px;
-  border-left: 4px solid #ccc;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+  border: 1px solid rgba(30, 45, 64, 0.08);
+  border-left: 5px solid #ccc;
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: 0 16px 32px rgba(24, 39, 58, 0.08);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.error-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(24, 39, 58, 0.12);
 }
 
 .error-card.accepted {
-  opacity: 0.7;
-  background: #f0fff0;
+  opacity: 0.82;
+  background: linear-gradient(180deg, #f6fff7 0%, #eef9f0 100%);
   border-left-color: #4caf50 !important;
 }
 
@@ -111,34 +128,41 @@ const handleAccept = () => {
 .error-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
 .error-title {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
 .error-number {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #eef2f6;
   font-weight: 700;
-  color: #666;
+  color: #516071;
 }
 
 .error-type {
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: #232f3e;
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #1c2d42;
   text-transform: capitalize;
 }
 
 .error-severity {
-  padding: 4px 12px;
+  padding: 7px 12px;
   border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-size: 0.78rem;
+  font-weight: 800;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
 .severity-heavy .error-severity {
@@ -157,16 +181,20 @@ const handleAccept = () => {
 }
 
 .error-location {
-  font-size: 0.9rem;
-  color: #666;
+  display: inline-flex;
   margin-bottom: 16px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: rgba(31, 47, 68, 0.05);
+  font-size: 0.84rem;
+  color: #607083;
   font-family: monospace;
 }
 
 .error-content {
-  background: #f8f9fa;
+  background: #f7f9fc;
   padding: 16px;
-  border-radius: 6px;
+  border-radius: 16px;
   margin-bottom: 16px;
 }
 
@@ -180,18 +208,23 @@ const handleAccept = () => {
 
 .label {
   display: block;
-  font-weight: 500;
-  color: #555;
-  margin-bottom: 4px;
-  font-size: 0.9rem;
+  font-weight: 700;
+  color: #5a6a7d;
+  margin-bottom: 6px;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 code {
   display: block;
-  padding: 8px 12px;
-  border-radius: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
   font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .original-text {
@@ -212,14 +245,13 @@ code {
 .error-explanation,
 .ai-recommendation {
   margin-bottom: 12px;
-  padding: 12px;
-  background: #fafafa;
-  border-radius: 6px;
-  border-left: 3px solid #ff9900;
+  padding: 14px 16px;
+  background: #fafbfd;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 47, 68, 0.08);
 }
 
 .ai-recommendation {
-  border-left-color: #0073bb;
   background: #f0f8ff;
 }
 
@@ -231,7 +263,8 @@ code {
 
 .error-explanation p:first-child,
 .ai-recommendation p:first-child {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  color: #1c2d42;
 }
 
 .error-actions {
@@ -241,29 +274,53 @@ code {
 }
 
 .accept-btn {
-  background: #1e8900;
-  color: white;
+  background: linear-gradient(135deg, #1f7a45 0%, #259b58 100%);
+  color: #ffffff;
   border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
+  padding: 12px 18px;
+  border-radius: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 8px;
+  box-shadow: 0 12px 24px rgba(31, 122, 69, 0.22);
 }
 
 .accept-btn:hover {
-  background: #176e00;
   transform: translateY(-1px);
 }
 
 .accepted-badge {
-  background: #d4edda;
-  color: #155724;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: #e8f6ea;
+  color: #1f7a45;
+  font-weight: 800;
+}
+
+@media (max-width: 720px) {
+  .error-card {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .error-header {
+    flex-direction: column;
+  }
+
+  .error-actions {
+    justify-content: stretch;
+  }
+
+  .accept-btn,
+  .accepted-badge {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>
