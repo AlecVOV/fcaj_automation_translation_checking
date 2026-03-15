@@ -5,93 +5,61 @@ const originalText = ref('')
 const translatedText = ref('')
 
 const fullPrompt = computed(() => {
-  return `[LƯU Ý QUAN TRỌNG DÀNH CHO AI]
-Đây là một prompt có cấu trúc. Nhiệm vụ của bạn là **THỰC THI** các hướng dẫn bên dưới (như [Role], [Objectives]) để hiệu đính văn bản trong [Context].
-**KHÔNG** phân tích, debug, hay chỉnh sửa cấu trúc của chính cái prompt này. Hãy nhập vai và làm theo yêu cầu.
+  return `[IMPORTANT]
+Follow the instructions below to review and improve a Vietnamese translation of an AWS article.
+Do not analyze or edit this prompt itself. Just do the review task.
 
-# [Role]
-Bạn là kiến trúc sư hệ thống với 20+ năm kinh nghiệm về cloud computing, hiện là chuyên gia tại AWS. Bạn có kinh nghiệm dịch cabin và chuyên hiệu đính các bài blog/kỹ thuật của AWS.
+# Role
+You are a senior AWS technical editor and translator.
 
-# [Personality]
-Khó tính, cầu toàn, soi kỹ từng từ/câu. Ưu tiên tính chính xác và tự nhiên trong tiếng Việt. Không bỏ sót lỗi nhỏ.
-
-# [Objectives]
-Bạn nhận **[Bài Gốc]** (EN) và **[Bài đã dịch]** (VI) trong **[Context]**. Hãy:
-1. **Rà soát tiêu đề thật kỹ** (ý nghĩa, phong cách, thuật ngữ).
-2. **Đối chiếu từng đoạn**: phát hiện sai nghĩa, thiếu ý, thừa ý, diễn đạt cứng (word-for-word), lỗi ngữ pháp/thuật ngữ.
-3. **Giữ nguyên tên dịch vụ/thuộc tính AWS** (không dịch, đúng chữ hoa/thương, đúng brand: *Amazon S3*, *AWS Lambda*, *EC2*, *VPC*, *Availability Zone*, v.v.).
-4. **Thuật ngữ kỹ thuật chung**: chỉ dịch khi tự nhiên; khi cần, để song ngữ bằng ngoặc.
-5. **Đề xuất bản sửa** dễ đọc cho người mới, nhưng **không làm sai nội dung kỹ thuật**.
-6. **Không thêm thông tin không có trong bản gốc**; có thể thêm hư từ/kết nối câu để mượt hơn.
-
-# [Context]
-
-## [Bài Gốc]
+# Input
+## Original (English)
 ${originalText.value}
 
-## [Bài đã dịch]
+## Translation (Vietnamese)
 ${translatedText.value}
 
-# [Style Guide]
-* **Đối tượng**: người mới học CS hoặc ít kiến thức công nghệ.
-* **Giọng văn**: diễn giải, mạch lạc, gần gũi; tránh khẩu ngữ quá mức.
-* **Thuật ngữ**: giữ chuẩn ngành; không "Việt hoá" quá đà.
-* **Song ngữ khi cần**: *thuật ngữ (term)* ở **lần xuất hiện đầu** mỗi thuật ngữ quan trọng.
-  * Ví dụ: *endpoint → điểm cuối (endpoint)*
-  * *on-premises → tại chỗ (on-premises)*
-* **Giữ nguyên**: code blocks, tên API/SDK/CLI, tham số, JSON keys, tên màn hình Console, tên nút, output logs, câu lệnh shell, đường dẫn, URLs, region codes, dung lượng/đơn vị (GiB vs GB).
-* **Số & đơn vị**: không tự đổi (ms ↔ s, $ ↔ VND).
-* **Liên kết**: giữ link, dịch anchor text nếu là văn bản thuần.
-* **Dấu câu & chính tả**: tiếng Việt chuẩn, nhất quán cách viết hoa tên riêng.
+# What to do
+1. Check the title first: meaning, tone, and AWS terminology.
+2. Compare each paragraph with the original and find:
+   - wrong meaning
+   - missing or extra information
+   - awkward literal translation
+   - grammar/wording issues
+3. Keep AWS service and product names unchanged (for example: Amazon S3, AWS Lambda, EC2, VPC, Availability Zone).
+4. Keep technical items unchanged: code blocks, API/SDK/CLI names, parameters, JSON keys, console labels, logs, shell commands, paths, URLs, region codes, units, and numbers.
+5. Improve readability for beginners, but do not change technical meaning.
+6. Do not add new information not present in the original.
 
-# [Terminology Rules]
-* **Không dịch tên dịch vụ AWS** và thành phần sản phẩm (ví dụ: *Amazon S3, Amazon EC2, AWS IAM, AWS KMS, CloudWatch Logs, Availability Zone, VPC, Subnet, NAT Gateway*…).
-* **Từ chung nên dịch (kèm EN khi cần)**:
+# Style
+- Audience: beginners in CS/tech.
+- Tone: clear, natural, easy to follow.
+- Use consistent terminology across the article.
+- You may show bilingual terms when helpful at first mention (for example: "điểm cuối (endpoint)").
 
-  * *endpoint → điểm cuối (endpoint)*
-  * *availability zone → vùng khả dụng (Availability Zone)*
-  * *fault tolerance → chịu lỗi (fault tolerance)*
-  * *throughput → thông lượng (throughput)*
-  * *latency → độ trễ (latency)*
-* **Nhất quán thuật ngữ trong toàn bài** (dùng cùng một cách dịch cho cùng một khái niệm).
+# Severity
+- Critical: wrong meaning or missing key technical content.
+- Major: unclear terminology or hard-to-understand phrasing.
+- Minor: grammar, punctuation, or fluency issues.
 
-# [Quy trình thực hiện]
-1. **Tiền kiểm**: quét nhanh để lập danh sách thuật ngữ trọng yếu; đánh dấu chỗ có code/CLI/JSON để không sửa sai.
-2. **Kiểm tra tiêu đề**: đúng ý bài, đúng thuật ngữ, tự nhiên; tránh dịch word-for-word.
-3. **Đối chiếu từng đoạn**:
+# Output format
+A) Issues (in order of appearance):
+- Paragraph [number or heading, starts with "..."]
+  - Current translation: ...
+  - Original (EN): ...
+  - Suggested revision: ...
+  - Severity: Critical/Major/Minor
+  - Reason: ...
 
-   * So meaning (dịch có đủ ý? có sai lệch?)
-   * So terminology (chuẩn, nhất quán?)
-   * So fluency (tự nhiên, tránh dịch cứng?)
-   * So format (giữ code, tham số, link, bảng, bullet?)
-4. **Ghi lỗi** theo mẫu [Format] và **gợi ý chỉnh**.
-5. **Tóm tắt thay đổi chính** (tùy chọn) để người đọc nắm nhanh.
+B) Optional terminology table:
+| Term (EN) | Usage in article | Note |
 
-# [Mức độ lỗi]
-* **Critical**: sai nghĩa/thiếu ý ảnh hưởng hiểu nhầm kỹ thuật.
-* **Major**: dùng thuật ngữ chưa chuẩn, diễn đạt gây khó hiểu cho người mới.
-* **Minor**: ngữ pháp, chính tả, dấu câu, mượt câu.
-
-# [Format] (đầu ra)
-**A. Báo cáo lỗi** — liệt kê theo thứ tự xuất hiện:
-* **Đoạn [Số đoạn, tên đoạn (nếu có), bắt đầu bằng: "…"]**
-
-  * **Bản dịch hiện tại**: …
-  * **Bản gốc (EN)**: …
-  * **Gợi ý chỉnh sửa**: …
-  * **Mức độ**: Critical/Major/Minor
-  * **Lý giải**: vì sao cần sửa (nghĩa/thuật ngữ/độ tự nhiên/định dạng…)
-
-**B. Bảng thuật ngữ (tùy chọn)**
-| Thuật ngữ EN      | Cách dùng trong bài               | Ghi chú                     |
-| ----------------- | --------------------------------- | --------------------------- |
-| Availability Zone | vùng khả dụng (Availability Zone) | Giữ EN khi cần độ chính xác |
-
-# [Tiêu chí kiểm tra tiêu đề]
-* Truyền tải đúng chủ đề/kết quả chính của bài.
-* Dùng đúng thuật ngữ ngành; tránh "dịch thẳng" gây gượng.
-* Ngắn gọn, dễ hiểu với người mới (≤ 85 ký tự nếu có thể).
-* Không dịch tên dịch vụ AWS trong tiêu đề.`
+# Title checklist
+- Accurate to the original topic.
+- Uses correct technical terms.
+- Natural and easy to understand.
+- Prefer concise title (around 85 characters or less when possible).
+- Do not translate AWS service names in the title.`
 })
 
 const copyToClipboard = async () => {

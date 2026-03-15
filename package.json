@@ -22,6 +22,8 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1009.0",
+    "@pinecone-database/pinecone": "^7.1.0",
     "amplify": "^0.0.11",
     "aws-amplify": "^6.15.9",
     "oidc-client-ts": "^3.4.1",

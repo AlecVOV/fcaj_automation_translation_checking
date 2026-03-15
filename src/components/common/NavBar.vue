@@ -46,7 +46,7 @@ const handleLogout = () => {
     </div>
 
     <!-- Main Navigation Bar - Ivory White #FFFFF0 -->
-    <nav class="navbar" :class="{ scrolled: isScrolled }">
+    <nav class="navbar" :class="{ scrolled: isScrolled, admin: isAdminRoute }">
       <div class="navbar-container">
         <!-- Left: Logo & Brand -->
         <div class="navbar-left">
@@ -59,15 +59,18 @@ const handleLogout = () => {
           <!-- Main Navigation Links -->
           <ul class="navbar-menu">
             <li>
-              <router-link to="/" class="nav-link">Validate Translation</router-link>
+              <router-link to="/" class="nav-link">Prompt Generator</router-link>
             </li>
+            <!-- <li>
+              <router-link to="/" class="nav-link">Validate Translation</router-link>
+            </li> -->
             <!-- Admin-only links -->
             <template v-if="authStore.isAdmin">
-              <li>
+              <!-- <li>
                 <router-link to="/admin/prompt-generator" class="nav-link"
                   >Prompt Generator</router-link
                 >
-              </li>
+              </li> -->
               <li>
                 <router-link to="/admin/multi-blog-prompt" class="nav-link"
                   >Multi-Blog Prompt</router-link

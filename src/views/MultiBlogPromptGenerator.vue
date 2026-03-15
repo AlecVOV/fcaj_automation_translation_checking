@@ -14,20 +14,20 @@ const blogs = ref<BlogPair[]>([
 ])
 
 const fullPrompt = computed(() => {
-  let prompt = `[LƯU Ý QUAN TRỌNG DÀNH CHO AI]
-Đây là một prompt có cấu trúc. Nhiệm vụ của bạn là **THỰC THI** các hướng dẫn bên dưới để hiệu đính 3 bài blog trong [Context].
+  let prompt = `[IMPORTANT NOTE FOR AI]
+This is a structured prompt. Your task is to execute the instructions below to review 3 blog posts in [Context].
 
 # [Role]
-Bạn là kiến trúc sư hệ thống với 20+ năm kinh nghiệm về cloud computing, hiện là chuyên gia tại AWS. Bạn có kinh nghiệm dịch cabin và chuyên hiệu đính các bài blog/kỹ thuật của AWS.
+You are a system architect with 20+ years of cloud computing experience and an AWS expert. You are experienced in translation and in editing AWS technical/blog content.
 
 # [Objectives]
-Kiểm tra và hiệu đính 3 bài blog được cung cấp trong [Context]. Với mỗi bài:
-1. **Rà soát tiêu đề thật kỹ** (ý nghĩa, phong cách, thuật ngữ).
-2. **Đối chiếu từng đoạn**: phát hiện sai nghĩa, thiếu ý, thừa ý, diễn đạt cứng.
-3. **Giữ nguyên tên dịch vụ/thuộc tính AWS**.
-4. **Đảm bảo tính tự nhiên, trôi chảy** trong tiếng Việt.
-5. **Chú ý ngữ cảnh kỹ thuật** để tránh sai sót chuyên môn.
-6. **Chỉ cần đưa ra đánh giá điểm số từ 0 đến 1.50**.
+Review and edit 3 blog posts provided in [Context]. For each post:
+1. Carefully review the title (meaning, style, terminology).
+2. Compare each paragraph to detect mistranslation, missing ideas, extra ideas, or awkward wording.
+3. Keep AWS service/property names unchanged.
+4. Ensure natural and fluent Vietnamese.
+5. Pay close attention to technical context to avoid domain mistakes.
+6. Only provide a score from 0 to 1.50.
 
 # [Context]
 
@@ -35,13 +35,13 @@ Kiểm tra và hiệu đính 3 bài blog được cung cấp trong [Context]. V�
 
   blogs.value.forEach((blog, index) => {
     if (blog.original || blog.translated) {
-      prompt += `## Bài ${index + 1}
+      prompt += `## Blog ${index + 1}
 
-### [Bài Gốc ${index + 1}]
-${blog.original || '(Chưa có nội dung)'}
+### [Original ${index + 1}]
+${blog.original || '(No content yet)'}
 
-### [Bài đã dịch ${index + 1}]
-${blog.translated || '(Chưa có nội dung)'}
+### [Translated ${index + 1}]
+${blog.translated || '(No content yet)'}
 
 ---
 
@@ -50,25 +50,25 @@ ${blog.translated || '(Chưa có nội dung)'}
   })
 
   prompt +=
-    `# [Format Output]
-Với mỗi bài blog, hãy đưa ra thang điểm đánh giá từ 0 đến 1.50 dựa trên mức độ chính xác và tự nhiên của bản dịch. Sau đó, trả về theo định dạng sau:
-⛔️ **QUAN TRỌNG - YÊU CẦU BẮT BUỘC:**
-1. **CHỈ** trả về kết quả theo đúng định dạng mẫu bên dưới.
-2. **TUYỆT ĐỐI KHÔNG** đưa ra bất kỳ lời giải thích, phân tích chi tiết, "Expert Notes", hay gợi ý sửa lỗi nào.
-3. **KHÔNG** viết lời mở đầu (ví dụ: "Chào bạn...", "Dưới đây là kết quả...") hay lời kết thúc.
+    `# [Output Format]
+For each blog post, provide a score from 0 to 1.50 based on translation accuracy and naturalness. Then return the result in this format:
+⛔️ **IMPORTANT - REQUIRED RULES:**
+1. Return results only in the exact template format below.
+2. Do not provide any explanations, detailed analysis, "Expert Notes", or correction suggestions.
+3. Do not write an introduction (for example: "Hello...", "Here are the results...") or a closing line.
 
 ` +
     `
 
-**Bài 1:**
-* **Tên Bài**: [Tên của bài 1]
-* **Điểm đánh giá**: [Con số đưa ra cho bài 1]
+**Blog 1:**
+* **Title**: [Title of blog 1]
+* **Score**: [Score for blog 1]
 
-**Bài 2:**
-[Tương tự]
+**Blog 2:**
+[Same format]
 
-**Bài 3:**
-[Tương tự]`
+**Blog 3:**
+[Same format]`
 
   return prompt
 })

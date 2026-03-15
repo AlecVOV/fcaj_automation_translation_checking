@@ -7,7 +7,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('@/views/HomePage.vue'),
+      component: () => import('@/views/PromptGenerated.vue'),
       meta: { title: 'Validate Translation' },
     },
     {

@@ -3,7 +3,7 @@ import boto3
 import os
 import base64
 import io
-import pandas as pd # Cần thêm Layer (Xem hướng dẫn bên dưới)
+import pandas as pd 
 from botocore.exceptions import ClientError
 
 # --- CẤU HÌNH ---
@@ -94,12 +94,14 @@ def lambda_handler(event, context):
         return http_response(500, f"Internal Server Error: {str(e)}")
 
 def http_response(code, body):
-    """Hàm helper để trả về format chuẩn cho API Gateway"""
+    """Hàm helper để trả về format chuẩn và xử lý CORS cho API Gateway"""
     return {
         "statusCode": code,
         "headers": {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*" # CORS handling
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "OPTIONS, POST",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization" 
         },
         "body": json.dumps(body) if isinstance(body, dict) else json.dumps({"message": body})
     }
