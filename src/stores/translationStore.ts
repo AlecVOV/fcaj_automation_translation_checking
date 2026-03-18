@@ -14,7 +14,7 @@ async function getAuthToken(): Promise<string> {
 }
 
 export const useTranslationStore = defineStore('translation', () => {
-  const articles = ref<Article[]>([]) // ← renamed from translations
+  const articles = ref<Article[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -23,8 +23,12 @@ export const useTranslationStore = defineStore('translation', () => {
     isLoading.value = true
     error.value = null
     try {
-      // No Authorization header — avoids CORS preflight for this public endpoint
-      const response = await fetch(`${BASE_URL}/articles`)
+      const token = await getAuthToken()
+      const response = await fetch(`${BASE_URL}/articles`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
       if (!response.ok) {
         const body = await response.text()
         console.error('fetchTranslations error:', body)
@@ -45,7 +49,12 @@ export const useTranslationStore = defineStore('translation', () => {
     isLoading.value = true
     error.value = null
     try {
-      const response = await fetch(`${BASE_URL}/errors/${articleId}`)
+      const token = await getAuthToken()
+      const response = await fetch(`${BASE_URL}/errors/${articleId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
       if (!response.ok) throw new Error('Failed to fetch errors')
       return await response.json()
     } catch (e) {
@@ -84,5 +93,56 @@ export const useTranslationStore = defineStore('translation', () => {
     }
   }
 
-  return { articles, isLoading, error, fetchTranslations, fetchErrors, uploadFile }
+  // 2A.3: Update article status via POST /update-status
+  async function updateArticleStatus(articleId: string, newStatus: string) {
+    const token = await getAuthToken()
+    const response = await fetch(`${BASE_URL}/update-status`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ article_id: articleId, new_status: newStatus }),
+    })
+    if (!response.ok) {
+      const body = await response.text()
+      console.error('updateArticleStatus error:', body)
+      throw new Error('Failed to update status')
+    }
+    const article = articles.value.find((a) => a.article_id === articleId)
+    if (article) {
+      article.status = newStatus
+    }
+    return await response.json()
+  }
+
+  // 2B.4: Save review progress (accepted error IDs)
+  async function saveReviewProgress(articleId: string, acceptedErrorIds: string[]) {
+    const token = await getAuthToken()
+    const response = await fetch(`${BASE_URL}/review-progress`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ article_id: articleId, accepted_error_ids: acceptedErrorIds }),
+    })
+    if (!response.ok) {
+      const body = await response.text()
+      console.error('saveReviewProgress error:', body)
+      throw new Error('Failed to save review progress')
+    }
+    return await response.json()
+  }
+
+  return {
+    articles,
+    isLoading,
+    error,
+    fetchTranslations,
+    fetchErrors,
+    uploadFile,
+    updateArticleStatus,
+    saveReviewProgress,
+  }
 })

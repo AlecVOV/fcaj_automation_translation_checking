@@ -3,9 +3,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ErrorCard from '@/components/post/ErrorCard.vue'
 import CorrectedBlogPreview from '@/components/post/CorrectedBlogPreview.vue'
+import { useTranslationStore } from '@/stores/translationStore'
 
 const route = useRoute()
 const router = useRouter()
+const translationStore = useTranslationStore()
 
 const postId = route.params.id as string
 const post = ref<any>(null)
@@ -13,21 +15,19 @@ const errors = ref<any[]>([])
 const acceptedErrorIndices = ref<number[]>([])
 
 const translatedMarkdown = ref('')
+const currentStatus = ref('Ready')
+const isUpdatingStatus = ref(false)
 
-// URL API Gateway của ông
 const API_URL = 'https://01bkbzsyc3.execute-api.us-east-1.amazonaws.com/dev'
 
 onMounted(async () => {
   try {
-    // 1. FETCH LỖI TỪ DYNAMODB
     const errResponse = await fetch(`${API_URL}/get-errors?article_id=${postId}`)
     const errData = await errResponse.json()
 
-    // 2. FETCH NỘI DUNG MARKDOWN THẬT TỪ S3 (Sử dụng URL API mới)
     const contentResponse = await fetch(`${API_URL}/get-vie-md?article_id=${postId}`)
     const contentData = await contentResponse.json()
 
-    // Map data từ DB (Viết Hoa) sang định dạng Frontend (Viết thường / CamelCase)
     if (errData.errors && Array.isArray(errData.errors)) {
       errors.value = errData.errors.map((err: any) => {
         let mappedSeverity = 'light'
@@ -41,14 +41,22 @@ onMounted(async () => {
           severity: mappedSeverity,
           location: `Chunk #${err.ChunkIndex}`,
           original: err.OriginalText,
-          translated: err.CurrentTranslation, // Key dùng cho việc replace trong preview
-          suggestion: err.SuggestedFix, // Key dùng cho việc replace trong preview
+          translated: err.CurrentTranslation,
+          suggestion: err.SuggestedFix,
           explanation: err.Explanation,
         }
       })
+      // 2B.7: Pre-populate accepted errors from saved progress
+      if (errData.accepted_error_ids && Array.isArray(errData.accepted_error_ids)) {
+        const savedIds = new Set(errData.accepted_error_ids)
+        acceptedErrorIndices.value = errors.value
+          .map((err, idx) => (savedIds.has(err.id) ? idx : -1))
+          .filter((idx) => idx !== -1)
+      }
+    } else {
+      console.warn('No errors found for article:', postId)
     }
 
-    // Đếm số lượng lỗi cho Header UI
     let critCount = 0,
       majCount = 0,
       minCount = 0
@@ -58,22 +66,26 @@ onMounted(async () => {
       else minCount++
     })
 
-    // Gán dữ liệu vào biến `post`
     post.value = {
       article_id: postId,
       total_errors: errData.total_errors || errors.value.length,
       critical_errors: critCount,
       major_errors: majCount,
       minor_errors: minCount,
-      vietnameseTitle: 'Đang tải tiêu đề...', // Có thể lấy từ contentData nếu API trả về metadata
+      vietnameseTitle: 'Đang tải tiêu đề...',
       originalText: contentData.originalText || 'Nội dung gốc đang được tải...',
       translatedText: contentData.translatedText || 'Nội dung dịch đang được tải...',
     }
 
-    // Cập nhật nội dung Markdown thô để CorrectedBlogPreview xử lý
     translatedMarkdown.value = post.value.translatedText
+
+    // Load current status from the articles store (if available)
+    const article = translationStore.articles.find((a) => a.article_id === postId)
+    if (article?.status) {
+      currentStatus.value = article.status
+    }
   } catch (error) {
-    console.error('Lỗi khi fetch API:', error)
+    console.error('Error fetching API:', error)
   }
 })
 
@@ -93,6 +105,20 @@ function handleResetAll() {
 
 function isErrorAccepted(index: number): boolean {
   return acceptedErrorIndices.value.includes(index)
+}
+
+// 2A.5: Mark as Approved
+async function handleMarkApproved() {
+  isUpdatingStatus.value = true
+  try {
+    await translationStore.updateArticleStatus(postId, 'Approved')
+    currentStatus.value = 'Approved'
+  } catch (e) {
+    console.error('Failed to update status:', e)
+    alert('Failed to mark as approved. Please try again.')
+  } finally {
+    isUpdatingStatus.value = false
+  }
 }
 
 const acceptedCount = computed(() => acceptedErrorIndices.value.length)
@@ -116,6 +142,31 @@ const progressPercentage = computed(() => {
   if (errors.value.length === 0) return 0
   return (acceptedCount.value / errors.value.length) * 100
 })
+
+// 2B.6: Save review progress
+const isSavingProgress = ref(false)
+const saveProgressMessage = ref('')
+
+async function handleSaveProgress() {
+  isSavingProgress.value = true
+  saveProgressMessage.value = ''
+  try {
+    // Map accepted indices to actual error IDs (SK without the ERR# prefix)
+    const acceptedIds = acceptedErrorIndices.value
+      .map((idx) => errors.value[idx]?.id)
+      .filter(Boolean)
+    await translationStore.saveReviewProgress(postId, acceptedIds)
+    saveProgressMessage.value = 'Progress saved!'
+    setTimeout(() => {
+      saveProgressMessage.value = ''
+    }, 3000)
+  } catch (e) {
+    console.error('Failed to save progress:', e)
+    saveProgressMessage.value = 'Failed to save. Try again.'
+  } finally {
+    isSavingProgress.value = false
+  }
+}
 </script>
 
 <template>
@@ -126,15 +177,32 @@ const progressPercentage = computed(() => {
       <div v-if="post" class="detail-content fade-in">
         <section class="hero-card">
           <div class="hero-copy">
-            <span class="eyebrow">Translation Review Workspace</span>
+            <div class="eyebrow-row">
+              <span class="eyebrow">Translation Review Workspace</span>
+              <span
+                class="status-badge-detail"
+                :class="`status-${currentStatus.toLowerCase().replace(' ', '-')}`"
+              >
+                {{ currentStatus }}
+              </span>
+            </div>
             <div class="hero-title-row">
-              <h1>Article {{ post.article_id }}</h1>
+              <h1>{{ post.article_id }}</h1>
               <span class="badge-large">{{ post.total_errors }} total issues</span>
             </div>
             <p class="hero-description">
               Review detected translation issues, apply accepted fixes, and compare the original and
               translated copy in one place.
             </p>
+            <button
+              v-if="currentStatus !== 'Approved' && currentStatus !== 'Published'"
+              class="btn-approve"
+              :disabled="isUpdatingStatus"
+              @click="handleMarkApproved"
+            >
+              {{ isUpdatingStatus ? 'Updating...' : 'Mark as Approved' }}
+            </button>
+            <span v-else class="approved-label">This article is {{ currentStatus }}</span>
           </div>
 
           <div class="hero-progress">
@@ -187,6 +255,16 @@ const progressPercentage = computed(() => {
                 Accept all suggestions
               </button>
               <button class="bulk-btn reset-all" @click="handleResetAll">Reset selection</button>
+              <button
+                class="bulk-btn save-progress"
+                :disabled="isSavingProgress"
+                @click="handleSaveProgress"
+              >
+                {{ isSavingProgress ? 'Saving...' : 'Save Progress' }}
+              </button>
+              <span v-if="saveProgressMessage" class="save-feedback">{{
+                saveProgressMessage
+              }}</span>
             </div>
           </div>
 
@@ -616,5 +694,97 @@ const progressPercentage = computed(() => {
   .text-content {
     max-height: none;
   }
+}
+
+/* 2A.5: Status and Approve button */
+.eyebrow-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.status-badge-detail {
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.status-badge-detail.status-ready {
+  background: #e8eaed;
+  color: #5f6368;
+}
+.status-badge-detail.status-in-review {
+  background: #fff4e6;
+  color: #b45309;
+}
+.status-badge-detail.status-approved {
+  background: #dcfce7;
+  color: #166534;
+}
+.status-badge-detail.status-published {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.btn-approve {
+  margin-top: 16px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 12px;
+  background: #166534;
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 6px 16px rgba(22, 101, 52, 0.25);
+}
+
+.btn-approve:hover:not(:disabled) {
+  background: #15803d;
+  transform: translateY(-1px);
+}
+
+.btn-approve:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.approved-label {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 8px 18px;
+  border-radius: 12px;
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* 2B.6: Save Progress button */
+.save-progress {
+  background: #1e40af;
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(30, 64, 175, 0.22);
+}
+
+.save-progress:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.save-feedback {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  color: #166534;
+  font-weight: 600;
+  font-size: 0.88rem;
 }
 </style>

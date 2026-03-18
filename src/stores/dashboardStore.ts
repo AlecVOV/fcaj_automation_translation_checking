@@ -8,6 +8,11 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
+  // Filter state
+  const searchQuery = ref('')
+  const filterSeverity = ref<'all' | 'critical' | 'major' | 'minor'>('all')
+  const filterStatus = ref<string>('all') // 2A.6: status filter
+
   const statistics = computed(() => {
     const total = posts.value.length
     const critical = posts.value.reduce((sum, p) => sum + p.critical_errors, 0)
@@ -16,13 +21,43 @@ export const useDashboardStore = defineStore('dashboard', () => {
     return { totalPosts: total, criticalErrors: critical, majorErrors: major, minorErrors: minor }
   })
 
+  const filteredPosts = computed(() => {
+    let result = posts.value
+
+    // Text search
+    const query = searchQuery.value.trim().toLowerCase()
+    if (query) {
+      result = result.filter(
+        (p) =>
+          p.article_id.toLowerCase().includes(query) ||
+          (p.title && p.title.toLowerCase().includes(query)),
+      )
+    }
+
+    // Severity filter
+    if (filterSeverity.value === 'critical') {
+      result = result.filter((p) => p.critical_errors > 0)
+    } else if (filterSeverity.value === 'major') {
+      result = result.filter((p) => p.major_errors > 0)
+    } else if (filterSeverity.value === 'minor') {
+      result = result.filter((p) => p.minor_errors > 0)
+    }
+
+    // 2A.6: Status filter
+    if (filterStatus.value !== 'all') {
+      result = result.filter((p) => (p.status || 'Ready') === filterStatus.value)
+    }
+
+    return result
+  })
+
   async function fetchPosts() {
     isLoading.value = true
     error.value = null
     try {
       const translationStore = useTranslationStore()
       await translationStore.fetchTranslations()
-      posts.value = translationStore.articles // ← was .translations
+      posts.value = translationStore.articles
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to fetch posts'
     } finally {
@@ -31,7 +66,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
   }
 
   async function getPostById(id: string) {
-    const post = posts.value.find((p) => p.article_id === id) // ← was p.id
+    const post = posts.value.find((p) => p.article_id === id)
     if (!post) throw new Error('Post not found')
     return post
   }
@@ -46,5 +81,17 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
   }
 
-  return { posts, isLoading, error, statistics, fetchPosts, getPostById, getPostErrors }
+  return {
+    posts,
+    isLoading,
+    error,
+    searchQuery,
+    filterSeverity,
+    filterStatus,
+    statistics,
+    filteredPosts,
+    fetchPosts,
+    getPostById,
+    getPostErrors,
+  }
 })

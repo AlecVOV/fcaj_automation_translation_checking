@@ -40,6 +40,8 @@ export interface DashboardStats {
 
 export interface Article {
   article_id: string
+  title?: string
+  status?: string
   total_errors: number
   critical_errors: number
   major_errors: number

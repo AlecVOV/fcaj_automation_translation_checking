@@ -46,24 +46,32 @@ def lambda_handler(event, context):
 
         print(f"Querying DynamoDB with PK: {pk_value}")
 
-        # 4. Thực hiện Query (Hiệu quả hơn Scan)
+        # 4. Query errors (SK begins_with ERR#)
         response = table.query(
             KeyConditionExpression=Key('PK').eq(pk_value) & Key('SK').begins_with('ERR#')
         )
-        
         items = response.get('Items', [])
-        
         print(f"Found {len(items)} errors.")
 
-        # 5. Trả về kết quả
+        # 5. Also fetch METADATA item for AcceptedErrorIds
+        accepted_error_ids = []
+        meta_response = table.get_item(
+            Key={'PK': pk_value, 'SK': 'METADATA'}
+        )
+        meta_item = meta_response.get('Item')
+        if meta_item and 'AcceptedErrorIds' in meta_item:
+            accepted_error_ids = meta_item['AcceptedErrorIds']
+
+        # 6. Return results
         return {
             "statusCode": 200,
             "headers": headers,
             "body": json.dumps({
                 "article_id": article_id,
                 "total_errors": len(items),
-                "errors": items
-            }, cls=DecimalEncoder) # Dùng class DecimalEncoder để tránh lỗi
+                "errors": items,
+                "accepted_error_ids": accepted_error_ids
+            }, cls=DecimalEncoder)
         }
 
     except Exception as e:
