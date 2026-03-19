@@ -360,7 +360,7 @@ async function handleAddNote() {
         </section>
 
         <section class="text-comparison">
-          <div class="section-heading">
+          <div class="section-heading-stacked">
             <span class="section-kicker">Content Review</span>
             <h2>Original and translated text</h2>
           </div>
@@ -628,6 +628,16 @@ async function handleAddNote() {
 .workspace-card,
 .text-comparison {
   padding: 28px;
+}
+
+.section-heading-stacked {
+  margin-bottom: 22px;
+}
+
+.section-heading-stacked h2 {
+  margin: 0;
+  font-size: clamp(1.6rem, 2.1vw, 2.2rem);
+  color: #172537;
 }
 
 .workspace-header,
