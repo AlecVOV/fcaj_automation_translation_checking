@@ -135,6 +135,37 @@ export const useTranslationStore = defineStore('translation', () => {
     return await response.json()
   }
 
+  // 4A.4: Save a reviewer note
+  async function saveNote(articleId: string, noteText: string) {
+    const token = await getAuthToken()
+    const response = await fetch(`${BASE_URL}/save-note`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ article_id: articleId, note_text: noteText }),
+    })
+    if (!response.ok) {
+      const body = await response.text()
+      console.error('saveNote error:', body)
+      throw new Error('Failed to save note')
+    }
+    return await response.json()
+  }
+
+  // 4A.4: Fetch reviewer notes
+  async function fetchNotes(articleId: string) {
+    const token = await getAuthToken()
+    const response = await fetch(`${BASE_URL}/get-review-notes?article_id=${articleId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    if (!response.ok) throw new Error('Failed to fetch notes')
+    return await response.json()
+  }
+
   return {
     articles,
     isLoading,
@@ -144,5 +175,7 @@ export const useTranslationStore = defineStore('translation', () => {
     uploadFile,
     updateArticleStatus,
     saveReviewProgress,
+    saveNote,
+    fetchNotes,
   }
 })

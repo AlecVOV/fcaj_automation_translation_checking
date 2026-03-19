@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 
 interface PreviewError {
   translated?: string
@@ -12,7 +12,7 @@ const props = defineProps<{
   acceptedErrorIndices: number[] // Mảng chứa index của các lỗi đã được chấp nhận
 }>()
 
-const copySuccess = ref(false)
+// const copySuccess = ref(false)
 
 /**
  * Logic: Tự động tạo ra nội dung Markdown mới đã qua chỉnh sửa.
@@ -77,28 +77,28 @@ const correctionCount = computed(() => props.acceptedErrorIndices.length)
 const totalErrors = computed(() => props.errors.length)
 
 // Hàm copy nội dung đã sửa vào bộ nhớ đệm
-const copyToClipboard = async () => {
-  try {
-    await navigator.clipboard.writeText(correctedMarkdown.value)
-    copySuccess.value = true
-    setTimeout(() => (copySuccess.value = false), 2000)
-  } catch (err) {
-    console.error('Không thể copy:', err)
-  }
-}
+// const copyToClipboard = async () => {
+//   try {
+//     await navigator.clipboard.writeText(correctedMarkdown.value)
+//     copySuccess.value = true
+//     setTimeout(() => (copySuccess.value = false), 2000)
+//   } catch (err) {
+//     console.error('Không thể copy:', err)
+//   }
+// }
 
-// Hàm tải file .md đã sửa về máy
-const downloadMarkdown = () => {
-  const blob = new Blob([correctedMarkdown.value], { type: 'text/markdown' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `corrected-blog-${new Date().getTime()}.md`
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
-}
+// // Hàm tải file .md đã sửa về máy
+// const downloadMarkdown = () => {
+//   const blob = new Blob([correctedMarkdown.value], { type: 'text/markdown' })
+//   const url = URL.createObjectURL(blob)
+//   const a = document.createElement('a')
+//   a.href = url
+//   a.download = `corrected-blog-${new Date().getTime()}.md`
+//   document.body.appendChild(a)
+//   a.click()
+//   document.body.removeChild(a)
+//   URL.revokeObjectURL(url)
+// }
 </script>
 
 <template>
@@ -130,7 +130,7 @@ const downloadMarkdown = () => {
       </div>
     </div>
 
-    <div class="blog-actions">
+    <!-- <div class="blog-actions">
       <button
         class="action-btn copy-btn"
         :class="{ success: copySuccess }"
@@ -141,7 +141,7 @@ const downloadMarkdown = () => {
       </button>
 
       <button class="action-btn download-btn" @click="downloadMarkdown">Download .md</button>
-    </div>
+    </div> -->
 
     <div class="usage-hint">
       <p>

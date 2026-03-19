@@ -112,14 +112,14 @@ Admin uploads Excel/CSV
 
 ### Frontend (no new Lambda needed)
 
-- [ ] **3.1** `src/views/PostDetailPage.vue` — Add `handleExportMarkdown()` function: iterate accepted errors, replace `translated` with `suggestion` in translatedMarkdown, create Blob, trigger download as `{article_id}-corrected.md`
-- [ ] **3.2** `src/views/PostDetailPage.vue` — Add "Export Corrected .md" button in bulk-actions
+- [x] **3.1** `src/views/PostDetailPage.vue` — Add `handleExportMarkdown()` function: iterate accepted errors, replace `translated` with `suggestion` in translatedMarkdown, create Blob, trigger download as `{article_id}-corrected.md`
+- [x] **3.2** `src/views/PostDetailPage.vue` — Add "Export Corrected .md" button in bulk-actions
 
 ### Verify
 
-- [ ] **3.3** Clicking export downloads a `.md` file
-- [ ] **3.4** Exported file contains the corrected text (accepted suggestions applied)
-- [ ] **3.5** Unaccepted errors remain unchanged in the exported file
+- [x] **3.3** Clicking export downloads a `.md` file
+- [x] **3.4** Exported file contains the corrected text (accepted suggestions applied)
+- [x] **3.5** Unaccepted errors remain unchanged in the exported file
 
 ---
 
@@ -127,21 +127,21 @@ Admin uploads Excel/CSV
 
 ### Backend
 
-- [ ] **4A.1** Create `lambda/SaveReviewNote.py` — `POST /articles/{article_id}/notes`, receives `{ note_text }`, writes `PK=ART#{id}`, `SK=NOTE#{timestamp_ms}` with `NoteText`, `WrittenBy` (from JWT), `CreatedAt`; requires Cognito JWT
-- [ ] **4A.2** Create `lambda/GetReviewNotes.py` — `GET /articles/{article_id}/notes`, queries `SK begins_with NOTE#`, returns sorted list; requires Cognito JWT
-- [ ] **4A.3** Wire up API Gateway routes for both Lambdas + Cognito authorizer
+- [x] **4A.1** Create `lambda/SaveReviewNote.py` — `POST /articles/{article_id}/notes`, receives `{ note_text }`, writes `PK=ART#{id}`, `SK=NOTE#{timestamp_ms}` with `NoteText`, `WrittenBy` (from JWT), `CreatedAt`; requires Cognito JWT
+- [x] **4A.2** Create `lambda/GetReviewNotes.py` — `GET /articles/{article_id}/notes`, queries `SK begins_with NOTE#`, returns sorted list; requires Cognito JWT
+- [x] **4A.3** Wire up API Gateway routes for both Lambdas + Cognito authorizer
 
 ### Frontend
 
-- [ ] **4A.4** `src/stores/translationStore.ts` — Add `saveNote(articleId, noteText)` and `fetchNotes(articleId)` functions
-- [ ] **4A.5** `src/views/PostDetailPage.vue` — Add Notes section below workspace card: scrollable note list + textarea + "Add Note" button
-- [ ] **4A.6** `src/views/PostDetailPage.vue` — Load notes on mount via `fetchNotes`; push new note into local array on submit
+- [x] **4A.4** `src/stores/translationStore.ts` — Add `saveNote(articleId, noteText)` and `fetchNotes(articleId)` functions
+- [x] **4A.5** `src/views/PostDetailPage.vue` — Add Notes section below workspace card: scrollable note list + textarea + "Add Note" button
+- [x] **4A.6** `src/views/PostDetailPage.vue` — Load notes on mount via `fetchNotes`; push new note into local array on submit
 
 ### Verify
 
-- [ ] **4A.7** Adding a note persists after page refresh
-- [ ] **4A.8** Notes show author email and timestamp
-- [ ] **4A.9** Notes appear in chronological order
+- [x] **4A.7** Adding a note persists after page refresh
+- [x] **4A.8** Notes show author email and timestamp
+- [x] **4A.9** Notes appear in chronological order
 
 ---
 

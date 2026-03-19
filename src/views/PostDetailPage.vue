@@ -84,6 +84,15 @@ onMounted(async () => {
     if (article?.status) {
       currentStatus.value = article.status
     }
+    // 4A.6: Load reviewer notes
+    try {
+      const notesData = await translationStore.fetchNotes(postId)
+      if (notesData.notes && Array.isArray(notesData.notes)) {
+        notes.value = notesData.notes
+      }
+    } catch (e) {
+      console.warn('Could not load notes:', e)
+    }
   } catch (error) {
     console.error('Error fetching API:', error)
   }
@@ -165,6 +174,57 @@ async function handleSaveProgress() {
     saveProgressMessage.value = 'Failed to save. Try again.'
   } finally {
     isSavingProgress.value = false
+  }
+}
+
+// 3.1: Export corrected markdown
+function handleExportMarkdown() {
+  let correctedText = translatedMarkdown.value
+
+  // Apply accepted suggestions: replace translated text with suggested fix
+  acceptedErrorIndices.value.forEach((idx) => {
+    const err = errors.value[idx]
+    if (err?.translated && err?.suggestion) {
+      correctedText = correctedText.replace(err.translated, err.suggestion)
+    }
+  })
+
+  const blob = new Blob([correctedText], { type: 'text/markdown;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${postId}-corrected.md`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+// 4A.5: Reviewer Notes
+const notes = ref<{ note_id: string; note_text: string; written_by: string; created_at: string }[]>(
+  [],
+)
+const newNoteText = ref('')
+const isSavingNote = ref(false)
+
+async function handleAddNote() {
+  const text = newNoteText.value.trim()
+  if (!text) return
+
+  isSavingNote.value = true
+  try {
+    const result = await translationStore.saveNote(postId, text)
+    // Push into local array immediately
+    notes.value.push({
+      note_id: result.note_id,
+      note_text: text,
+      written_by: result.written_by,
+      created_at: result.created_at,
+    })
+    newNoteText.value = ''
+  } catch (e) {
+    console.error('Failed to save note:', e)
+    alert('Failed to save note. Please try again.')
+  } finally {
+    isSavingNote.value = false
   }
 }
 </script>
@@ -262,6 +322,13 @@ async function handleSaveProgress() {
               >
                 {{ isSavingProgress ? 'Saving...' : 'Save Progress' }}
               </button>
+              <button
+                class="bulk-btn export-md"
+                :disabled="acceptedCount === 0"
+                @click="handleExportMarkdown"
+              >
+                Export Corrected .md
+              </button>
               <span v-if="saveProgressMessage" class="save-feedback">{{
                 saveProgressMessage
               }}</span>
@@ -305,6 +372,47 @@ async function handleSaveProgress() {
             <div class="text-panel translated">
               <h3>Translated Text</h3>
               <div class="text-content">{{ post.translatedText }}</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4A.5: Reviewer Notes -->
+        <section class="notes-card">
+          <div class="notes-header">
+            <span class="section-kicker">Collaboration</span>
+            <h2>Reviewer Notes</h2>
+            <p class="section-description">
+              Leave notes for yourself or other reviewers about this article.
+            </p>
+          </div>
+
+          <div class="notes-input-row">
+            <textarea
+              v-model="newNoteText"
+              class="note-textarea"
+              placeholder="Write a note..."
+              rows="3"
+            ></textarea>
+            <button
+              class="btn-add-note"
+              :disabled="isSavingNote || !newNoteText.trim()"
+              @click="handleAddNote"
+            >
+              {{ isSavingNote ? 'Saving...' : 'Add Note' }}
+            </button>
+          </div>
+
+          <div v-if="notes.length === 0" class="notes-empty">
+            No notes yet. Be the first to leave a note!
+          </div>
+
+          <div v-else class="notes-list">
+            <div v-for="note in notes" :key="note.note_id" class="note-item">
+              <div class="note-meta">
+                <span class="note-author">{{ note.written_by }}</span>
+                <span class="note-time">{{ new Date(note.created_at).toLocaleString() }}</span>
+              </div>
+              <p class="note-text">{{ note.note_text }}</p>
             </div>
           </div>
         </section>
@@ -786,5 +894,133 @@ async function handleSaveProgress() {
   color: #166534;
   font-weight: 600;
   font-size: 0.88rem;
+}
+/* 3.2: Export Corrected .md button */
+.export-md {
+  background: #7c3aed;
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(124, 58, 237, 0.22);
+}
+
+.export-md:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 4A.5: Reviewer Notes */
+.notes-card {
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 22px 48px rgba(31, 47, 68, 0.08);
+  backdrop-filter: blur(16px);
+  padding: 28px;
+}
+
+.notes-header {
+  margin-bottom: 20px;
+}
+
+.notes-header h2 {
+  margin: 0;
+  font-size: clamp(1.6rem, 2.1vw, 2.2rem);
+  color: #172537;
+}
+
+.notes-input-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.note-textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid rgba(31, 47, 68, 0.12);
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.note-textarea:focus {
+  outline: none;
+  border-color: #ff9900;
+}
+
+.btn-add-note {
+  padding: 12px 22px;
+  border: none;
+  border-radius: 14px;
+  background: #1f2f44;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  box-shadow: 0 8px 20px rgba(31, 47, 68, 0.18);
+}
+
+.btn-add-note:hover:not(:disabled) {
+  background: #2a3f5a;
+  transform: translateY(-1px);
+}
+
+.btn-add-note:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notes-empty {
+  padding: 24px;
+  text-align: center;
+  color: #8896a6;
+  font-size: 0.95rem;
+  border: 2px dashed rgba(31, 47, 68, 0.1);
+  border-radius: 16px;
+}
+
+.notes-list {
+  display: grid;
+  gap: 12px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.note-item {
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(31, 47, 68, 0.08);
+}
+
+.note-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.note-author {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #1f2f44;
+}
+
+.note-time {
+  font-size: 0.8rem;
+  color: #8896a6;
+}
+
+.note-text {
+  margin: 0;
+  color: #425264;
+  line-height: 1.6;
+  white-space: pre-wrap;
 }
 </style>
