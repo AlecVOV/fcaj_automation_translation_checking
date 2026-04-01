@@ -9,9 +9,9 @@ const currentYear = new Date().getFullYear()
         <div class="footer-grid">
           <!-- Company Info -->
           <div class="footer-section">
-            <h3>First AI Journey (FCAJ)</h3>
+            <h3>First Cloud AI Journey (FCAJ)</h3>
             <p>Designed for Students</p>
-            <p>Community Powered: AWS Study Groups & University Clubs. </p>
+            <p>Community Powered: AWS Study Groups & University Clubs.</p>
             <p>Hands-On Focus: Real-world labs, not just textbooks.</p>
             <p>Career Ready: Build the tech and soft skills to land your first job.</p>
           </div>
@@ -23,7 +23,9 @@ const currentYear = new Date().getFullYear()
               <li><a href="https://awsstudygroup.com/">About AWS Study Group</a></li>
               <li><a href="https://cloudjourney.awsstudygroup.com/">About FCAJ</a></li>
               <li><a href="https://aws.amazon.com/blogs">AWS Blog (English)</a></li>
-              <li><a href="https://awsstudygroup.com/category/aws-blogs/">AWS Blog (Vietnamese)</a></li>
+              <li>
+                <a href="https://awsstudygroup.com/category/aws-blogs/">AWS Blog (Vietnamese)</a>
+              </li>
             </ul>
           </div>
 
