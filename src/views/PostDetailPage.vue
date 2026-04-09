@@ -5,6 +5,7 @@ import ErrorCard from '@/components/post/ErrorCard.vue'
 import CorrectedBlogPreview from '@/components/post/CorrectedBlogPreview.vue'
 import { useTranslationStore } from '@/stores/translationStore'
 
+
 const route = useRoute()
 const router = useRouter()
 const translationStore = useTranslationStore()
@@ -29,7 +30,13 @@ onMounted(async () => {
     const contentData = await contentResponse.json()
 
     if (errData.errors && Array.isArray(errData.errors)) {
-      errors.value = errData.errors.map((err: any) => {
+      // 1. Sắp xếp mảng lỗi theo ChunkIndex từ nhỏ đến lớn
+      const sortedErrors = errData.errors.sort((a: any, b: any) => {
+        return (a.ChunkIndex || 0) - (b.ChunkIndex || 0)
+      })
+
+      // 2. Sau đó mới map dữ liệu
+      errors.value = sortedErrors.map((err: any) => {
         let mappedSeverity = 'light'
         if (err.Severity === 'Critical') mappedSeverity = 'heavy'
         else if (err.Severity === 'Major') mappedSeverity = 'medium'
@@ -181,11 +188,36 @@ async function handleSaveProgress() {
 function handleExportMarkdown() {
   let correctedText = translatedMarkdown.value
 
-  // Apply accepted suggestions: replace translated text with suggested fix
-  acceptedErrorIndices.value.forEach((idx) => {
-    const err = errors.value[idx]
-    if (err?.translated && err?.suggestion) {
-      correctedText = correctedText.replace(err.translated, err.suggestion)
+  const acceptedErrors = acceptedErrorIndices.value
+    .map((idx) => errors.value[idx])
+    .filter(Boolean)
+
+  acceptedErrors.sort((a, b) => {
+    const isOmissionA = a.type === 'Omission' ? 1 : 0
+    const isOmissionB = b.type === 'Omission' ? 1 : 0
+    if (isOmissionA !== isOmissionB) return isOmissionB - isOmissionA
+    const lenA = a.translated?.length || 0
+    const lenB = b.translated?.length || 0
+    return lenB - lenA
+  })
+
+  // Apply accepted suggestions
+  acceptedErrors.forEach((err) => {
+    if (err?.suggestion) {
+      const replaceStr = err.suggestion.trim()
+
+      // Trị bệnh Omission rỗng
+      if (!err.translated || err.translated.trim() === '') {
+        correctedText = correctedText.replace(/\s+$/, '') + '\n\n' + replaceStr
+        return // Tương đương 'continue' trong forEach
+      }
+
+      const searchStr = err.translated.trim()
+      let escapedSearch = searchStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      escapedSearch = escapedSearch.replace(/\s+/g, '\\s+')
+
+      const regex = new RegExp(escapedSearch, 'g')
+      correctedText = correctedText.replace(regex, () => replaceStr)
     }
   })
 
