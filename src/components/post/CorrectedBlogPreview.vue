@@ -1,89 +1,52 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-
-interface PreviewError {
-  translated?: string
-  suggestion?: string
-  type?: string // <-- Nhớ thêm trường type vào interface này
-}
+import { applyCorrections } from '@/utils/applyCorrections'
+import type { CorrectionError } from '@/utils/applyCorrections'
 
 const props = defineProps<{
-  originalMarkdown: string // Nội dung bài blog gốc từ S3
-  errors: PreviewError[] // Danh sách lỗi đã được map keys (translated, suggestion)
+  originalMarkdown: string       // Nội dung bài blog gốc từ S3
+  errors: CorrectionError[]      // Danh sách lỗi đã được map keys (translated, suggestion)
   acceptedErrorIndices: number[] // Mảng chứa index của các lỗi đã được chấp nhận
 }>()
 
-// const copySuccess = ref(false)
-
 /**
- * Logic: Tự động tạo ra nội dung Markdown mới đã qua chỉnh sửa.
- * Mỗi khi props.acceptedErrorIndices thay đổi, hàm này sẽ chạy lại.
+ * Tự động tạo ra nội dung Markdown mới đã qua chỉnh sửa.
+ * Dùng shared utility applyCorrections để đồng bộ với Export function.
  */
 const correctedMarkdown = computed(() => {
-  let result = props.originalMarkdown
-  if (!result) return ''
+  if (!props.originalMarkdown) return ''
 
   const acceptedErrors = props.acceptedErrorIndices
     .map((index) => props.errors[index])
-    .filter((error): error is PreviewError => Boolean(error))
+    .filter((error): error is CorrectionError => Boolean(error))
 
-  // 1. SẮP XẾP ƯU TIÊN: Omission chạy trước, cái nào dài chạy trước
-  acceptedErrors.sort((a, b) => {
-    const isOmissionA = a.type === 'Omission' ? 1 : 0
-    const isOmissionB = b.type === 'Omission' ? 1 : 0
-    if (isOmissionA !== isOmissionB) return isOmissionB - isOmissionA 
-    const lenA = a.translated?.length || 0
-    const lenB = b.translated?.length || 0
-    return lenB - lenA 
-  })
-
-  // 2. TÌM VÀ THAY THẾ (HOẶC NỐI ĐUÔI)
-  for (const error of acceptedErrors) {
-    if (error.suggestion) {
-      const replaceStr = error.suggestion.trim()
-
-      // THUẬT TOÁN MỚI: Nếu Current Translation rỗng -> Nối thẳng vào cuối bài!
-      if (!error.translated || error.translated.trim() === '') {
-        // Xóa các khoảng trắng thừa ở đuôi file và nối thêm nội dung mới
-        result = result.replace(/\s+$/, '') + '\n\n' + replaceStr
-        continue // Chuyển sang lỗi tiếp theo
-      }
-
-      // Nếu có Current Translation -> Chạy Regex linh hoạt như cũ
-      const searchStr = error.translated.trim()
-      let escapedSearch = searchStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      escapedSearch = escapedSearch.replace(/\s+/g, '\\s+')
-
-      const regex = new RegExp(escapedSearch, 'g')
-      result = result.replace(regex, () => replaceStr)
-    }
-  }
-
-  return result
+  return applyCorrections(props.originalMarkdown, acceptedErrors)
 })
 
-// Fix luôn hàm Highlight để tránh bị xịt do ký tự xuống dòng
+/**
+ * Highlight các đoạn đã được sửa trong preview.
+ */
 const highlightedPreview = computed(() => {
   let html = correctedMarkdown.value
   if (!html) return ''
 
+  // Escape HTML entities để hiển thị an toàn trong <pre><code>
   html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
   for (const index of props.acceptedErrorIndices) {
     const error = props.errors[index]
-    if (error && error.suggestion) {
-      // Chuẩn hóa suggestion để build regex (cho phép sai lệch khoảng trắng)
-      let regexStr = error.suggestion.trim()
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      regexStr = regexStr.replace(/\s+/g, '\\s+')
+    if (!error?.suggestion) continue
 
-      const regex = new RegExp(regexStr, 'g')
-      // Dùng $& để bọc đúng đoạn text được match lại
-      html = html.replace(regex, (match) => `<mark class="corrected">${match}</mark>`)
-    }
+    const suggestionRaw = error.suggestion.trim()
+    let regexStr = suggestionRaw
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    regexStr = regexStr.replace(/\s+/g, '\\s+')
+
+    const regex = new RegExp(regexStr, 'g')
+    html = html.replace(regex, (match) => `<mark class="corrected">${match}</mark>`)
   }
 
   return html
@@ -91,30 +54,6 @@ const highlightedPreview = computed(() => {
 
 const correctionCount = computed(() => props.acceptedErrorIndices.length)
 const totalErrors = computed(() => props.errors.length)
-
-// Hàm copy nội dung đã sửa vào bộ nhớ đệm
-// const copyToClipboard = async () => {
-//   try {
-//     await navigator.clipboard.writeText(correctedMarkdown.value)
-//     copySuccess.value = true
-//     setTimeout(() => (copySuccess.value = false), 2000)
-//   } catch (err) {
-//     console.error('Không thể copy:', err)
-//   }
-// }
-
-// // Hàm tải file .md đã sửa về máy
-// const downloadMarkdown = () => {
-//   const blob = new Blob([correctedMarkdown.value], { type: 'text/markdown' })
-//   const url = URL.createObjectURL(blob)
-//   const a = document.createElement('a')
-//   a.href = url
-//   a.download = `corrected-blog-${new Date().getTime()}.md`
-//   document.body.appendChild(a)
-//   a.click()
-//   document.body.removeChild(a)
-//   URL.revokeObjectURL(url)
-// }
 </script>
 
 <template>
@@ -145,19 +84,6 @@ const totalErrors = computed(() => props.errors.length)
         <pre><code v-html="highlightedPreview"></code></pre>
       </div>
     </div>
-
-    <!-- <div class="blog-actions">
-      <button
-        class="action-btn copy-btn"
-        :class="{ success: copySuccess }"
-        @click="copyToClipboard"
-      >
-        <span v-if="copySuccess">Copied</span>
-        <span v-else>Copy markdown</span>
-      </button>
-
-      <button class="action-btn download-btn" @click="downloadMarkdown">Download .md</button>
-    </div> -->
 
     <div class="usage-hint">
       <p>
@@ -290,53 +216,11 @@ const totalErrors = computed(() => props.errors.length)
   word-break: break-word;
 }
 
-/* Style cho thẻ mark được render qua v-html */
 :deep(.corrected) {
   background: #2a9154 !important;
   color: #ffffff !important;
   padding: 2px 6px;
   border-radius: 8px;
-}
-
-.blog-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 20px;
-  justify-content: flex-start;
-}
-
-.action-btn {
-  flex: 1 1 calc(50% - 6px);
-  padding: 12px 18px;
-  border-radius: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  border: none;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.action-btn:hover {
-  transform: translateY(-1px);
-}
-
-.copy-btn {
-  background: #ffb648;
-  color: #1f2f44;
-  box-shadow: 0 12px 24px rgba(255, 182, 72, 0.25);
-}
-
-.copy-btn.success {
-  background: #2a9154;
-  color: white;
-}
-
-.download-btn {
-  background: #1f2f44;
-  color: white;
-  box-shadow: 0 12px 24px rgba(31, 47, 68, 0.22);
 }
 
 .usage-hint {
@@ -373,10 +257,6 @@ const totalErrors = computed(() => props.errors.length)
   .preview-legend {
     justify-content: flex-start;
     text-align: left;
-  }
-
-  .action-btn {
-    flex: 1 1 100%;
   }
 }
 </style>

@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ErrorCard from '@/components/post/ErrorCard.vue'
 import CorrectedBlogPreview from '@/components/post/CorrectedBlogPreview.vue'
 import { useTranslationStore } from '@/stores/translationStore'
-
+import { applyCorrections } from '@/utils/applyCorrections'
 
 const route = useRoute()
 const router = useRouter()
@@ -186,40 +186,12 @@ async function handleSaveProgress() {
 
 // 3.1: Export corrected markdown
 function handleExportMarkdown() {
-  let correctedText = translatedMarkdown.value
-
   const acceptedErrors = acceptedErrorIndices.value
     .map((idx) => errors.value[idx])
     .filter(Boolean)
 
-  acceptedErrors.sort((a, b) => {
-    const isOmissionA = a.type === 'Omission' ? 1 : 0
-    const isOmissionB = b.type === 'Omission' ? 1 : 0
-    if (isOmissionA !== isOmissionB) return isOmissionB - isOmissionA
-    const lenA = a.translated?.length || 0
-    const lenB = b.translated?.length || 0
-    return lenB - lenA
-  })
-
-  // Apply accepted suggestions
-  acceptedErrors.forEach((err) => {
-    if (err?.suggestion) {
-      const replaceStr = err.suggestion.trim()
-
-      // Trị bệnh Omission rỗng
-      if (!err.translated || err.translated.trim() === '') {
-        correctedText = correctedText.replace(/\s+$/, '') + '\n\n' + replaceStr
-        return // Tương đương 'continue' trong forEach
-      }
-
-      const searchStr = err.translated.trim()
-      let escapedSearch = searchStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      escapedSearch = escapedSearch.replace(/\s+/g, '\\s+')
-
-      const regex = new RegExp(escapedSearch, 'g')
-      correctedText = correctedText.replace(regex, () => replaceStr)
-    }
-  })
+  // Dùng chung utility với CorrectedBlogPreview — 1 chỗ sửa, cả 2 đều đúng
+  const correctedText = applyCorrections(translatedMarkdown.value, acceptedErrors)
 
   const blob = new Blob([correctedText], { type: 'text/markdown;charset=utf-8' })
   const url = URL.createObjectURL(blob)
