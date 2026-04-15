@@ -4,6 +4,7 @@ import { computed } from 'vue'
 interface PreviewError {
   translated?: string
   suggestion?: string
+  type?: string // <-- Nhớ thêm trường type vào interface này
 }
 
 const props = defineProps<{
@@ -20,53 +21,69 @@ const props = defineProps<{
  */
 const correctedMarkdown = computed(() => {
   let result = props.originalMarkdown
-
   if (!result) return ''
 
-  // Lấy danh sách các lỗi đã được người dùng nhấn "Accept"
   const acceptedErrors = props.acceptedErrorIndices
     .map((index) => props.errors[index])
     .filter((error): error is PreviewError => Boolean(error))
 
-  // Duyệt qua từng lỗi và thực hiện thay thế (Replace)
+  // 1. SẮP XẾP ƯU TIÊN: Omission chạy trước, cái nào dài chạy trước
+  acceptedErrors.sort((a, b) => {
+    const isOmissionA = a.type === 'Omission' ? 1 : 0
+    const isOmissionB = b.type === 'Omission' ? 1 : 0
+    if (isOmissionA !== isOmissionB) return isOmissionB - isOmissionA
+    const lenA = a.translated?.length || 0
+    const lenB = b.translated?.length || 0
+    return lenB - lenA
+  })
+
+  // 2. TÌM VÀ THAY THẾ (HOẶC NỐI ĐUÔI)
   for (const error of acceptedErrors) {
-    if (error.translated && error.suggestion) {
-      /**
-       * Mẹo: Dùng split/join để thay thế tất cả các cụm từ khớp hoàn toàn trong văn bản.
-       * Điều này giúp sửa lỗi triệt để nếu cụm từ đó xuất hiện nhiều lần.
-       */
-      result = result.split(error.translated).join(error.suggestion)
+    if (error.suggestion) {
+      const replaceStr = error.suggestion.trim()
+
+      // THUẬT TOÁN MỚI: Nếu Current Translation rỗng -> Nối thẳng vào cuối bài!
+      if (!error.translated || error.translated.trim() === '') {
+        // Xóa các khoảng trắng thừa ở đuôi file và nối thêm nội dung mới
+        result = result.replace(/\s+$/, '') + '\n\n' + replaceStr
+        continue // Chuyển sang lỗi tiếp theo
+      }
+
+      // Nếu có Current Translation -> Chạy Regex linh hoạt như cũ
+      const searchStr = error.translated.trim()
+      let escapedSearch = searchStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      escapedSearch = escapedSearch.replace(/\s+/g, '\\s+')
+
+      const regex = new RegExp(escapedSearch, 'g')
+      result = result.replace(regex, () => replaceStr)
     }
   }
 
   return result
 })
 
-/**
- * Logic: Tạo bản xem trước (Preview) có tô màu những chỗ đã sửa.
- */
+// Fix luôn hàm Highlight để tránh bị xịt do ký tự xuống dòng
 const highlightedPreview = computed(() => {
   let html = correctedMarkdown.value
-
   if (!html) return ''
 
-  // 1. Escape các ký tự HTML để tránh lỗi render
   html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
-  // 2. Tô màu (Highlight) những đoạn đã được sửa đổi
   for (const index of props.acceptedErrorIndices) {
     const error = props.errors[index]
     if (error && error.suggestion) {
-      // Escape các ký tự đặc biệt trong suggestion để dùng được trong Regex
-      const escapedSuggestion = error.suggestion
+      // Chuẩn hóa suggestion để build regex (cho phép sai lệch khoảng trắng)
+      let regexStr = error.suggestion
+        .trim()
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      regexStr = regexStr.replace(/\s+/g, '\\s+')
 
-      const regex = new RegExp(escapedSuggestion, 'g')
-      // Bao bọc đoạn đã sửa bằng thẻ <mark>
-      html = html.replace(regex, `<mark class="corrected">${error.suggestion}</mark>`)
+      const regex = new RegExp(regexStr, 'g')
+      // Dùng $& để bọc đúng đoạn text được match lại
+      html = html.replace(regex, (match) => `<mark class="corrected">${match}</mark>`)
     }
   }
 
